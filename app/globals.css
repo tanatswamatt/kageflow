@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+
+/* Kageflow tokens: indigo "shadow" chrome, cool paper canvas, jade for money actions */
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #1a1d2e;
+  --color-ink-soft: #4a4f66;
+  --color-ink-faint: #7c8197;
+  --color-paper: #f5f6f9;
+  --color-surface: #ffffff;
+  --color-line: #e2e4ec;
+  --color-line-strong: #c9ccd8;
+
+  --color-shadow-900: #161a33;
+  --color-shadow-800: #1e2346;
+  --color-shadow-700: #2a3060;
+  --color-shadow-300: #a9aee0;
+  --color-shadow-100: #e8e9f7;
+
+  --color-jade-700: #0b6b5f;
+  --color-jade-600: #0f7f71;
+  --color-jade-50: #e6f4f1;
+
+  --color-ember-700: #a8321d;
+  --color-ember-50: #fbece8;
+  --color-amber-700: #94600a;
+  --color-amber-50: #fbf3e2;
+
+  --radius-control: 6px;
+  --radius-panel: 10px;
+}
+
+@layer base {
+  html {
+    color: var(--color-ink);
+    background: var(--color-paper);
+    font-feature-settings: "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-shadow-700);
+    outline-offset: 2px;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.01em;
+  }
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
