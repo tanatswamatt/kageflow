@@ -39,3 +39,26 @@ export async function signUp(fd: FormData) {
   if (data.session) redirect("/onboarding");
   redirect(`/login?ok=${encodeURIComponent("Check your inbox to confirm your email, then sign in")}`);
 }
+
+export async function requestReset(fd: FormData) {
+  const email = str(fd, "email");
+  if (!email) fail("/login?mode=forgot", "Enter your email");
+  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/callback?next=/reset-password` });
+  if (error && !error.message.toLowerCase().includes("rate")) fail("/login?mode=forgot", error.message);
+  if (error) fail("/login?mode=forgot", "Too many emails sent. Wait a few minutes and try again");
+  // Same message whether or not the email exists, so accounts can't be discovered
+  redirect(`/login?ok=${encodeURIComponent("If that email has an account, a reset link is on its way. Check spam too.")}`);
+}
+
+export async function setNewPassword(fd: FormData) {
+  const password = str(fd, "password");
+  const confirm = str(fd, "confirm");
+  if (!password || password.length < 8) fail("/reset-password", "Use at least 8 characters");
+  if (password !== confirm) fail("/reset-password", "The two passwords don't match");
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) fail("/reset-password", error.message);
+  redirect(`/reset-password?done=1&ok=${encodeURIComponent("Password changed. You are signed in.")}`);
+}

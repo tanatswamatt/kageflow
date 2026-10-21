@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { Field, Input, Notice } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
-import { signIn, signUp } from "./actions";
+import { requestReset, signIn, signUp } from "./actions";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -14,6 +14,7 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   const signup = params.mode === "signup";
+  const forgot = params.mode === "forgot";
 
   return (
     <main className="grid min-h-dvh lg:grid-cols-[1fr_minmax(420px,520px)]">
@@ -38,6 +39,23 @@ export default async function LoginPage({
           <div className="mb-8 lg:hidden">
             <Logo />
           </div>
+          {forgot ? (
+            <>
+              <h1 className="text-[22px] font-semibold">Reset your password</h1>
+              <p className="mt-1 mb-6 text-ink-soft">We&apos;ll email you a link to choose a new one.</p>
+              <Notice params={params} />
+              <form action={requestReset} className="flex flex-col gap-4">
+                <Field label="Email">
+                  <Input name="email" type="email" autoComplete="email" required />
+                </Field>
+                <SubmitButton pendingText="Sending…" className="mt-2 w-full">Send reset link</SubmitButton>
+              </form>
+              <p className="mt-6 text-center text-ink-soft">
+                <Link className="font-medium text-shadow-700 hover:underline" href="/login">Back to sign in</Link>
+              </p>
+            </>
+          ) : (
+            <>
           <h1 className="text-[22px] font-semibold">{signup ? "Create your account" : "Sign in to Kageflow"}</h1>
           <p className="mt-1 mb-6 text-ink-soft">
             {signup ? "You'll set up your company next." : "Use the email you registered with."}
@@ -56,6 +74,11 @@ export default async function LoginPage({
             <Field label="Password" hint={signup ? "At least 8 characters" : undefined}>
               <Input name="password" type="password" autoComplete={signup ? "new-password" : "current-password"} required minLength={signup ? 8 : undefined} />
             </Field>
+            {!signup && (
+              <Link href="/login?mode=forgot" className="-mt-2 self-end text-[13px] font-medium text-shadow-700 hover:underline">
+                Forgot password?
+              </Link>
+            )}
             <SubmitButton pendingText={signup ? "Creating account…" : "Signing in…"} className="mt-2 w-full">
               {signup ? "Create account" : "Sign in"}
             </SubmitButton>
@@ -67,6 +90,8 @@ export default async function LoginPage({
               <>New to Kageflow? <Link className="font-medium text-shadow-700 hover:underline" href="/login?mode=signup">Create an account</Link></>
             )}
           </p>
+            </>
+          )}
         </div>
       </section>
     </main>

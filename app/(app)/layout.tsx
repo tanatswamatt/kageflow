@@ -39,10 +39,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ],
     },
     {
+      title: "Purchases",
+      items: [
+        { href: "/purchases/bills", label: "Bills and expenses" },
+        { href: "/purchases/payments", label: "Supplier payments" },
+        { href: "/purchases/payables", label: "Payables" },
+      ],
+    },
+    {
+      title: "Reports",
+      items: [
+        { href: "/reports/profit-loss", label: "Profit and loss" },
+        { href: "/reports/balance-sheet", label: "Balance sheet" },
+        { href: "/reports/vat", label: "VAT201" },
+        { href: "/accounting/trial-balance", label: "Trial balance" },
+      ],
+    },
+    {
       title: "Accounting",
       items: [
+        ...(ctx.can("banking.write") ? [{ href: "/banking", label: "Bank reconciliation" }] : []),
         { href: "/accounting/journals", label: "Journals" },
-        { href: "/accounting/trial-balance", label: "Trial balance" },
         { href: "/accounting/accounts", label: "Chart of accounts" },
         { href: "/accounting/periods", label: "Periods" },
       ],
