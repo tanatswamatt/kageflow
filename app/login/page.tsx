@@ -19,19 +19,19 @@ export default async function LoginPage({
   return (
     <main className="grid min-h-dvh lg:grid-cols-[1fr_minmax(420px,520px)]">
       <section className="relative hidden overflow-hidden bg-shadow-900 p-12 text-shadow-100 lg:flex lg:flex-col lg:justify-between">
-        <Logo inverted />
-        <div className="max-w-md">
-          <p className="text-[28px] font-semibold leading-snug text-white">
-            From first enquiry to posted journal, in one system.
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/login-bg.jpg" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-shadow-900/95 via-shadow-900/80 to-shadow-900/40" aria-hidden="true" />
+        <div className="relative"><Logo inverted /></div>
+        <div className="relative max-w-lg">
+          <p className="text-[30px] font-semibold leading-snug text-white">
+            Know what every car on your lot is really making you.
           </p>
-          <p className="mt-4 text-shadow-300">
-            Leads, deals, stock and the books for South African businesses. Every number traces back to the record behind it.
+          <p className="mt-4 text-[16px] leading-relaxed text-shadow-100">
+            Kageflow runs your dealership, from the first WhatsApp enquiry to the signed deal, with stock, costs and VAT books all connected. Built for Southern African car dealers.
           </p>
         </div>
-        <p className="text-[13px] text-shadow-300">A Pretan Technologies product</p>
-        <svg className="pointer-events-none absolute -right-24 -bottom-24 opacity-[0.07]" width="520" height="520" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 18C4 9 10 4 20 4c0 10-5 16-14 16H4z" fill="#ffffff" />
-        </svg>
+        <p className="relative text-[13px] text-shadow-300">A Pretan Technologies product</p>
       </section>
 
       <section className="flex items-center justify-center px-6 py-12">
