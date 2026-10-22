@@ -153,3 +153,75 @@ export async function countStock(fd: FormData) {
   revalidatePath("/inventory", "layout");
   done(back, "Stock count saved and the difference posted");
 }
+
+// ---------- adverts and photos ----------
+
+export async function saveAdvert(fd: FormData) {
+  const id = str(fd, "id")!;
+  const back = `/inventory/units/${id}`;
+  const ctx = await getContext();
+  if (!ctx.can("inventory.write")) fail(back, "Your role can't change adverts");
+  const price = num(fd, "advert_price");
+  if (price !== null && price < 0) fail(back, "Price can't be negative");
+  const features = (str(fd, "features") ?? "").split(/[\n,]/).map((f) => f.trim()).filter(Boolean).slice(0, 60);
+  const publish = bool(fd, "is_published");
+  const { data: u } = await ctx.supabase.from("inventory_units").select("status, list_price").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
+  if (!u) fail(back, "Vehicle not found");
+  if (publish && ["sold", "written_off"].includes(u.status as string)) fail(back, "Sold vehicles can't be advertised");
+  if (publish && price === null && u.list_price === null) fail(back, "Add a price before publishing");
+  const { error } = await ctx.supabase.from("inventory_units").update({
+    is_published: publish,
+    advert_price: price,
+    advert_title: str(fd, "advert_title"),
+    advert_description: str(fd, "advert_description"),
+    features,
+    transmission: str(fd, "transmission"),
+    fuel_type: str(fd, "fuel_type"),
+    body_type: str(fd, "body_type"),
+  }).eq("id", id).eq("company_id", ctx.companyId);
+  if (error) fail(back, cleanError(error.message));
+  revalidatePath("/inventory/units");
+  done(back, publish ? "Advert saved and live on your feeds" : "Advert saved (not published)");
+}
+
+export async function registerPhotos(unitId: string, photos: { url: string; path: string }[]): Promise<{ error?: string }> {
+  const ctx = await getContext();
+  if (!ctx.can("inventory.write")) return { error: "Your role can't add photos" };
+  const { data: last } = await ctx.supabase.from("vehicle_photos").select("position").eq("unit_id", unitId).order("position", { ascending: false }).limit(1).maybeSingle();
+  let pos = last ? Number(last.position) + 1 : 0;
+  const rows = photos.filter((p) => p.url.startsWith("https://") && p.path.startsWith(`${ctx.companyId}/`)).map((p) => ({ company_id: ctx.companyId, unit_id: unitId, url: p.url, storage_path: p.path, position: pos++ }));
+  if (!rows.length) return { error: "No photos to add" };
+  const { error } = await ctx.supabase.from("vehicle_photos").insert(rows);
+  if (error) return { error: cleanError(error.message) };
+  revalidatePath(`/inventory/units/${unitId}`);
+  return {};
+}
+
+export async function removePhoto(fd: FormData) {
+  const unitId = str(fd, "unit_id")!;
+  const back = `/inventory/units/${unitId}`;
+  const ctx = await getContext();
+  if (!ctx.can("inventory.write")) fail(back, "Your role can't remove photos");
+  const { data: p } = await ctx.supabase.from("vehicle_photos").select("id, storage_path").eq("id", str(fd, "id")).eq("company_id", ctx.companyId).maybeSingle();
+  if (!p) fail(back, "Photo not found");
+  const { error } = await ctx.supabase.from("vehicle_photos").delete().eq("id", p.id);
+  if (error) fail(back, cleanError(error.message));
+  if (p.storage_path) await ctx.supabase.storage.from("vehicle-photos").remove([p.storage_path as string]);
+  done(back, "Photo removed");
+}
+
+export async function makeMainPhoto(fd: FormData) {
+  const unitId = str(fd, "unit_id")!;
+  const back = `/inventory/units/${unitId}`;
+  const ctx = await getContext();
+  if (!ctx.can("inventory.write")) fail(back, "Your role can't change photos");
+  const { data } = await ctx.supabase.from("vehicle_photos").select("id").eq("unit_id", unitId).eq("company_id", ctx.companyId).order("position").order("created_at");
+  const ids = ((data ?? []) as { id: string }[]).map((r) => r.id);
+  const chosen = str(fd, "id")!;
+  const order = [chosen, ...ids.filter((i) => i !== chosen)];
+  for (const [i, pid] of order.entries()) {
+    const { error } = await ctx.supabase.from("vehicle_photos").update({ position: i }).eq("id", pid);
+    if (error) fail(back, cleanError(error.message));
+  }
+  done(back, "Main photo changed");
+}

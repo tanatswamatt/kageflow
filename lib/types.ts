@@ -1,13 +1,17 @@
 export type Role = "owner" | "admin" | "accountant" | "sales" | "viewer";
 export type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
-export type LeadSource = "web_form" | "whatsapp" | "referral" | "manual" | "api" | "event" | "other";
+export type LeadSource = "web_form" | "whatsapp" | "referral" | "manual" | "api" | "event" | "other" | "autotrader" | "cars_co_za" | "facebook" | "email" | "walk_in";
 export type LeadStatus = "new" | "contacted" | "qualified" | "disqualified" | "converted";
 export type AccountKind = "prospect" | "customer" | "supplier" | "partner";
 export type ActivityType = "call" | "meeting" | "email" | "whatsapp" | "task" | "note" | "system";
 export type DealStatus = "open" | "won" | "lost";
 export type ConsentBasis = "consent" | "contract" | "legitimate_interest" | "not_recorded";
 
-export const LEAD_SOURCES: LeadSource[] = ["web_form", "whatsapp", "referral", "manual", "api", "event", "other"];
+export const LEAD_SOURCES: LeadSource[] = ["walk_in", "whatsapp", "autotrader", "cars_co_za", "facebook", "web_form", "email", "referral", "manual", "api", "event", "other"];
+export const SOURCE_LABEL: Record<LeadSource, string> = {
+  walk_in: "Walk-in", whatsapp: "WhatsApp", autotrader: "AutoTrader", cars_co_za: "Cars.co.za", facebook: "Facebook",
+  web_form: "Website", email: "Email", referral: "Referral", manual: "Manual", api: "API", event: "Event", other: "Other",
+};
 export const LEAD_STATUSES: LeadStatus[] = ["new", "contacted", "qualified", "disqualified", "converted"];
 export const ACCOUNT_KINDS: AccountKind[] = ["prospect", "customer", "supplier", "partner"];
 export const ACTIVITY_TYPES: Exclude<ActivityType, "system">[] = ["call", "meeting", "email", "whatsapp", "task", "note"];
@@ -258,8 +262,23 @@ export type Unit = {
   image_url: string | null;
   site_status: string | null;
   description: string | null;
+  stock_no: string | null;
+  is_published: boolean;
+  published_at: string | null;
+  advert_title: string | null;
+  advert_description: string | null;
+  advert_price: number | null;
+  features: string[];
+  transmission: string | null;
+  fuel_type: string | null;
+  body_type: string | null;
   created_at: string;
 };
+
+export type VehiclePhoto = { id: string; unit_id: string; url: string; storage_path: string | null; position: number };
+export type ListingFeed = { id: string; channel: string; name: string; token: string; include_reserved: boolean; is_active: boolean; last_fetched_at: string | null; fetch_count: number; created_at: string };
+export type LeadChannel = { id: string; kind: "email" | "whatsapp"; name: string; token: string; is_active: boolean; phone_number_id: string | null; display_phone: string | null; verify_token: string | null; app_secret: string | null; access_token: string | null; last_received_at: string | null; received_count: number; created_at: string };
+export type WhatsAppMessage = { id: string; lead_id: string | null; direction: "in" | "out"; wa_id: string; body: string | null; msg_type: string; status: string | null; created_at: string };
 
 export type UnitCost = {
   id: string;

@@ -18,6 +18,7 @@ const EVENTS: [string, string][] = [
   ["credit_note.issued", "Credit note issued"],
   ["payment.received", "Payment or deposit received"],
   ["unit.updated", "A website vehicle was reserved, sold or returned to stock"],
+  ["lead.created", "A new lead arrived from email, WhatsApp or the API"],
 ];
 
 type Delivery = { id: number; url: string; event: string; created_at: string; status_code: number | null; error_msg: string | null };

@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, Field, Input, Notice, PageHeader, Panel, Select } from "@/components/ui";
+import { Badge, Field, Input, Notice, PageHeader, Panel, Select, Textarea } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { LeadFields } from "@/components/crm/lead-fields";
 import { ActivityFeed } from "@/components/crm/activity-feed";
 import { LogActivity } from "@/components/crm/log-activity";
 import { getContext } from "@/lib/context";
 import { getMembers } from "@/lib/members";
-import { date, label, personName } from "@/lib/format";
+import { date, dateTime, label, personName } from "@/lib/format";
 import { leadTone } from "@/lib/badges";
-import type { Activity, Lead } from "@/lib/types";
+import { SOURCE_LABEL, type Activity, type Lead, type WhatsAppMessage } from "@/lib/types";
+import { sendWhatsApp } from "../whatsapp-actions";
 import { convertLead, deleteLead, updateLead } from "../../actions";
 
 export const metadata: Metadata = { title: "Lead" };
@@ -24,11 +25,16 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   if (!data) notFound();
   const lead = data as Lead;
 
-  const [{ data: acts }, { data: accounts }, members] = await Promise.all([
+  const [{ data: acts }, { data: accounts }, members, { data: waData }] = await Promise.all([
     ctx.supabase.from("crm_activities").select("*").eq("company_id", ctx.companyId).eq("lead_id", id).order("created_at", { ascending: false }),
     ctx.supabase.from("crm_accounts").select("id, name").eq("company_id", ctx.companyId).order("name").limit(500),
     getMembers(),
+    ctx.supabase.from("whatsapp_messages").select("id, lead_id, direction, wa_id, body, msg_type, status, created_at").eq("company_id", ctx.companyId).eq("lead_id", id).order("created_at").limit(300),
   ]);
+  const wa = (waData ?? []) as WhatsAppMessage[];
+  const lastIn = [...wa].reverse().find((m) => m.direction === "in");
+  const windowOpen = !!lastIn && Date.now() - new Date(lastIn.created_at).getTime() < 24 * 3600 * 1000;
+  const phoneDigits = (lead.phone ?? "").replace(/\D/g, "").replace(/^0(\d{9})$/, "27$1");
   const names = new Map(members.map((m) => [m.user_id, m.name]));
   const canWrite = ctx.can("crm.write");
   const converted = lead.status === "converted";
@@ -39,7 +45,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
     <>
       <PageHeader
         title={title}
-        description={lead.company_name && personName(lead) ? lead.company_name : undefined}
+        description={[lead.company_name && personName(lead) ? lead.company_name : null, `${SOURCE_LABEL[lead.source] ?? label(lead.source)}${lead.source_detail && lead.source_detail !== SOURCE_LABEL[lead.source] ? `, ${lead.source_detail}` : ""}`, lead.interest].filter(Boolean).join(" · ")}
         back={{ href: "/crm/leads", label: "Leads" }}
         actions={<Badge tone={leadTone[lead.status]}>{label(lead.status)}</Badge>}
       />
@@ -70,6 +76,30 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               </fieldset>
             </form>
           </Panel>
+
+          {(wa.length > 0 || phoneDigits.length >= 9) && (
+            <Panel title="WhatsApp" action={phoneDigits.length >= 9 && <a href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noreferrer" className="text-[13px] font-medium text-jade-700 hover:underline">Open in WhatsApp</a>}>
+              {wa.length === 0 ? (
+                <p className="text-sm text-ink-soft">No WhatsApp messages yet. Open in WhatsApp to message them from your phone.</p>
+              ) : (
+                <ol className="flex max-h-96 flex-col gap-2 overflow-y-auto">
+                  {wa.map((m) => (
+                    <li key={m.id} className={`max-w-[85%] rounded-[var(--radius-control)] px-3 py-2 text-sm ${m.direction === "in" ? "self-start bg-paper" : "self-end bg-jade-50"}`}>
+                      <div className="whitespace-pre-line">{m.body}</div>
+                      <div className="mt-0.5 text-[11px] text-ink-faint">{dateTime(m.created_at)}{m.direction === "out" && m.status ? ` · ${m.status}` : ""}</div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {canWrite && wa.length > 0 && (
+                <form action={sendWhatsApp} className="mt-3 flex flex-col gap-2">
+                  <input type="hidden" name="lead_id" value={lead.id} />
+                  <Textarea name="body" rows={2} required placeholder={windowOpen ? "Reply on WhatsApp" : "Their last message was over 24 hours ago, so WhatsApp may block a free reply"} />
+                  <div><SubmitButton size="sm" pendingText="Sending…">Send</SubmitButton></div>
+                </form>
+              )}
+            </Panel>
+          )}
 
           <Panel title="Activity" flush>
             {canWrite && !converted && <LogActivity refs={{ lead_id: lead.id }} back={back} />}

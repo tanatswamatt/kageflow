@@ -24,7 +24,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
   let query = ctx.supabase.from("inventory_units").select("*").eq("company_id", ctx.companyId).in("status", view.statuses).order("created_at", { ascending: false }).limit(500);
   if (q) {
     const t = `*${q.replace(/[*%,()]/g, " ")}*`;
-    query = query.or(`serial_no.ilike.${t},make.ilike.${t},model.ilike.${t}`);
+    query = query.or(`serial_no.ilike.${t},make.ilike.${t},model.ilike.${t},stock_no.ilike.${t}`);
   }
   const [{ data }, { data: values }] = await Promise.all([query, ctx.supabase.from("unit_values").select("unit_id, landed_cost").eq("company_id", ctx.companyId)]);
   const units = (data ?? []) as Unit[];
@@ -48,7 +48,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
         </nav>
         <form className="w-full sm:w-72">
           <input type="hidden" name="v" value={view.key} />
-          <Input name="q" type="search" defaultValue={q} placeholder="Search VIN, make, model" aria-label="Search vehicles" />
+          <Input name="q" type="search" defaultValue={q} placeholder="Search stock no, VIN, make, model" aria-label="Search vehicles" />
         </form>
       </div>
       <Panel flush>
@@ -70,7 +70,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
                       )}
                       <div>
                         <Link href={`/inventory/units/${u.id}`} className="font-medium hover:underline">{[u.make, u.model, u.year].filter(Boolean).join(" ") || "Unnamed unit"}</Link>
-                        <div className="text-xs text-ink-faint">{[u.variant, u.external_id ? "From website" : null].filter(Boolean).join(" · ")}</div>
+                        <div className="text-xs text-ink-faint">{[u.stock_no, u.variant, u.external_id ? "From website" : null].filter(Boolean).join(" · ")}{u.is_published && <span className="ml-1.5 rounded bg-jade-50 px-1.5 py-px font-medium text-jade-700">Advertised</span>}</div>
                       </div>
                     </div>
                   </Td>

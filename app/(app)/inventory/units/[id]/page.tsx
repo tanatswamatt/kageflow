@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Select, Table, Td, Th } from "@/components/ui";
+import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Select, Table, Td, Textarea, Th } from "@/components/ui";
+import { PhotoUploader } from "@/components/inventory/photo-uploader";
 import { SubmitButton } from "@/components/submit-button";
 import { UnitFields } from "@/components/inventory/unit-fields";
 import { getContext } from "@/lib/context";
 import { amount, date, label, money, today } from "@/lib/format";
 import { unitTone } from "@/lib/badges";
-import { UNIT_COST_KINDS, type Unit, type UnitCost } from "@/lib/types";
-import { addCost, reverseCost, updateUnit } from "../../actions";
+import { UNIT_COST_KINDS, type Unit, type UnitCost, type VehiclePhoto } from "@/lib/types";
+import { addCost, makeMainPhoto, registerPhotos, removePhoto, reverseCost, saveAdvert, updateUnit } from "../../actions";
+
+const TRANSMISSIONS = ["Manual", "Automatic"];
+const FUELS = ["Petrol", "Diesel", "Hybrid", "Electric"];
+const BODIES = ["Bakkie (single cab)", "Bakkie (double cab)", "Bakkie (extended cab)", "SUV", "Hatchback", "Sedan", "MPV", "Coupe", "Convertible", "Station wagon", "Panel van", "Minibus", "Truck"];
 
 export const metadata: Metadata = { title: "Vehicle" };
 
@@ -28,6 +33,10 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
     ctx.supabase.from("accounts").select("id, code, name, system_key").eq("company_id", ctx.companyId).in("type", ["asset", "liability"]).eq("is_active", true).order("code"),
     ctx.supabase.from("sales_doc_lines").select("doc_id, sales_docs(id, doc_type, number, status)").eq("company_id", ctx.companyId).eq("unit_id", id),
   ]);
+  const { data: photoData } = await ctx.supabase.from("vehicle_photos").select("id, unit_id, url, storage_path, position").eq("unit_id", id).order("position").order("created_at");
+  const photos = (photoData ?? []) as VehiclePhoto[];
+  const canAdvert = ctx.can("inventory.write");
+  const options = (list: string[], current: string | null) => [...new Set([...(current ? [current] : []), ...list])];
   const costList = (costs ?? []) as UnitCost[];
   const live = costList.filter((c) => !c.reversal_journal_id);
   const landed = live.reduce((s, c) => s + Number(c.amount), 0);
@@ -47,6 +56,31 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
       <Notice params={sp} />
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex min-w-0 flex-col gap-6">
+          <Panel title={<span className="flex items-center gap-2">Advert {u.is_published ? <Badge tone="jade">Live on feeds</Badge> : <Badge>Not published</Badge>}</span>}>
+            <form action={saveAdvert} className="flex flex-col gap-4">
+              <input type="hidden" name="id" value={id} />
+              <fieldset disabled={!canAdvert || final} className="contents">
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input type="checkbox" name="is_published" defaultChecked={u.is_published} className="size-4 accent-jade-700" />
+                  Publish to my stock feeds (AutoTrader, Cars.co.za, website)
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label={`Advertised price (${u.list_currency})`} hint={u.list_price != null ? `Blank uses the list price, ${money(u.list_price, u.list_currency)}` : undefined}>
+                    <Input name="advert_price" inputMode="decimal" defaultValue={u.advert_price ?? ""} />
+                  </Field>
+                  <Field label="Headline" hint="Blank uses year, make, model and variant"><Input name="advert_title" defaultValue={u.advert_title ?? ""} placeholder={[u.year, u.make, u.model, u.variant].filter(Boolean).join(" ")} /></Field>
+                  <Field label="Transmission"><Select name="transmission" defaultValue={u.transmission ?? ""}><option value="">Not set</option>{options(TRANSMISSIONS, u.transmission).map((o) => <option key={o}>{o}</option>)}</Select></Field>
+                  <Field label="Fuel"><Select name="fuel_type" defaultValue={u.fuel_type ?? ""}><option value="">Not set</option>{options(FUELS, u.fuel_type).map((o) => <option key={o}>{o}</option>)}</Select></Field>
+                  <Field label="Body type"><Select name="body_type" defaultValue={u.body_type ?? ""}><option value="">Not set</option>{options(BODIES, u.body_type).map((o) => <option key={o}>{o}</option>)}</Select></Field>
+                  <Field label="Features" hint="One per line or separated by commas"><Textarea name="features" rows={3} defaultValue={(u.features ?? []).join("\n")} placeholder={"Tow bar\nService history\nLeather seats"} /></Field>
+                  <Field label="Description" className="sm:col-span-2"><Textarea name="advert_description" rows={4} defaultValue={u.advert_description ?? u.description ?? ""} placeholder="Full service history, one owner, spare key…" /></Field>
+                </div>
+                {canAdvert && !final && <div><SubmitButton size="sm">Save advert</SubmitButton></div>}
+              </fieldset>
+              {final && <p className="text-[13px] text-ink-faint">Sold vehicles are taken off all feeds automatically.</p>}
+            </form>
+          </Panel>
+
           <Panel title="Landed cost" flush>
             {costList.length === 0 ? (
               <p className="px-5 py-4 text-ink-soft">No costs yet. Post the purchase price first, then transport, clearing and duty as they come in.</p>
@@ -112,13 +146,36 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
           )}
         </div>
         <div className="flex flex-col gap-6">
-          {u.image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={u.image_url} alt={[u.make, u.model].filter(Boolean).join(" ")} className="aspect-[4/3] w-full rounded-[var(--radius-panel)] border border-line object-cover" />
-          )}
+          <Panel title={`Photos (${photos.length})`}>
+            {photos.length === 0 && u.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={u.image_url} alt="" className="mb-3 aspect-[4/3] w-full rounded-[var(--radius-control)] object-cover" />
+            )}
+            {photos.length > 0 && (
+              <ul className="mb-3 grid grid-cols-2 gap-2">
+                {photos.map((p, i) => (
+                  <li key={p.id} className="group relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.url} alt="" className={`aspect-[4/3] w-full rounded-[var(--radius-control)] object-cover ${i === 0 ? "ring-2 ring-jade-600" : ""}`} />
+                    {i === 0 && <span className="absolute top-1 left-1 rounded bg-jade-700 px-1.5 py-0.5 text-[11px] font-medium text-white">Main</span>}
+                    {canAdvert && (
+                      <div className="absolute inset-x-1 bottom-1 flex justify-between gap-1">
+                        {i > 0 ? (
+                          <form action={makeMainPhoto}><input type="hidden" name="unit_id" value={id} /><input type="hidden" name="id" value={p.id} /><button className="rounded bg-shadow-900/80 px-1.5 py-0.5 text-[11px] text-white">Make main</button></form>
+                        ) : <span />}
+                        <form action={removePhoto}><input type="hidden" name="unit_id" value={id} /><input type="hidden" name="id" value={p.id} /><button className="rounded bg-shadow-900/80 px-1.5 py-0.5 text-[11px] text-white" aria-label="Remove photo">Remove</button></form>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {canAdvert && !final && <PhotoUploader companyId={ctx.companyId} unitId={id} register={registerPhotos} />}
+          </Panel>
           <Panel title="Summary">
             <Dl
               items={[
+                ["Stock number", <span key="s" className="font-mono">{u.stock_no}</span>],
                 ["Landed cost", <span key="l" className="font-semibold tabular-nums">{money(landed, base)}</span>],
                 ["Asking price", u.list_price != null ? money(u.list_price, u.list_currency) : ""],
                 ["Location", u.location],

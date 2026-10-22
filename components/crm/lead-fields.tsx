@@ -2,7 +2,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui";
 import { ConsentFields } from "./consent-fields";
 import { OwnerSelect } from "./owner-select";
 import { label } from "@/lib/format";
-import { LEAD_SOURCES, type Lead } from "@/lib/types";
+import { LEAD_SOURCES, SOURCE_LABEL, type Lead } from "@/lib/types";
 import type { MemberWithProfile } from "@/lib/members";
 
 export function LeadFields({ lead, members, defaultOwner, currency }: { lead?: Lead; members: MemberWithProfile[]; defaultOwner?: string; currency: string }) {
@@ -15,7 +15,7 @@ export function LeadFields({ lead, members, defaultOwner, currency }: { lead?: L
       <Field label="Phone or WhatsApp"><Input name="phone" type="tel" defaultValue={lead?.phone ?? ""} /></Field>
       <Field label="Source">
         <Select name="source" defaultValue={lead?.source ?? "manual"}>
-          {LEAD_SOURCES.map((s) => <option key={s} value={s}>{label(s)}</option>)}
+          {LEAD_SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
         </Select>
       </Field>
       <Field label="Source detail" hint="Campaign, referrer or page"><Input name="source_detail" defaultValue={lead?.source_detail ?? ""} /></Field>

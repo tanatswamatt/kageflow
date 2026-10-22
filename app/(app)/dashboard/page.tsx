@@ -4,6 +4,7 @@ import { Badge, ButtonLink, Empty, PageHeader, Panel, Stat } from "@/components/
 import { getContext } from "@/lib/context";
 import { dateTime, label, money, personName } from "@/lib/format";
 import { leadTone } from "@/lib/badges";
+import { SOURCE_LABEL } from "@/lib/types";
 import type { Activity, Deal, Lead, Stage } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -112,7 +113,7 @@ export default async function DashboardPage() {
                     <div className="truncate text-[13px] text-ink-soft">{l.interest || l.company_name}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
-                    <span className="text-[13px] text-ink-faint">{label(l.source)}</span>
+                    <span className="text-[13px] text-ink-faint">{SOURCE_LABEL[l.source] ?? label(l.source)}</span>
                     <Badge tone={leadTone[l.status]}>{label(l.status)}</Badge>
                   </div>
                 </li>

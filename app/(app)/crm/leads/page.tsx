@@ -5,6 +5,7 @@ import { getContext } from "@/lib/context";
 import { memberNames } from "@/lib/members";
 import { date, label, money, personName } from "@/lib/format";
 import { leadTone } from "@/lib/badges";
+import { SOURCE_LABEL } from "@/lib/types";
 import type { Lead, LeadStatus } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Leads" };
@@ -33,7 +34,13 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     const term = `*${q.replace(/[*%,()]/g, " ")}*`;
     query = query.or(`first_name.ilike.${term},last_name.ilike.${term},company_name.ilike.${term},email.ilike.${term},phone.ilike.${term}`);
   }
-  const [{ data }, names] = await Promise.all([query, memberNames()]);
+  const since = new Date(Date.now() - 30 * 864e5).toISOString();
+  const [{ data }, names, { data: recent }] = await Promise.all([
+    query,
+    memberNames(),
+    ctx.supabase.from("crm_leads").select("source").eq("company_id", ctx.companyId).gte("created_at", since).limit(5000),
+  ]);
+  const bySource = Object.entries(((recent ?? []) as { source: Lead["source"] }[]).reduce<Record<string, number>>((m, r) => ({ ...m, [r.source]: (m[r.source] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1]);
   const leads = (data ?? []) as Lead[];
 
   return (
@@ -44,6 +51,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         actions={ctx.can("crm.write") && <ButtonLink href="/crm/leads/new" tone="primary">New lead</ButtonLink>}
       />
       <Notice params={params} />
+      {bySource.length > 0 && (
+        <p className="mb-4 text-sm text-ink-soft">
+          Last 30 days: {bySource.map(([src, n], i) => <span key={src}>{i > 0 && " · "}<strong className="font-semibold text-ink">{n}</strong> {SOURCE_LABEL[src as Lead["source"]] ?? label(src)}</span>)}
+        </p>
+      )}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <nav className="flex gap-1" aria-label="Lead views">
           {VIEWS.map((v) => (
@@ -89,7 +101,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                     {personName(l) && l.company_name && <div className="text-xs text-ink-faint">{l.company_name}</div>}
                   </Td>
                   <Td className="max-w-64 truncate text-ink-soft">{l.interest}</Td>
-                  <Td>{label(l.source)}</Td>
+                  <Td>{SOURCE_LABEL[l.source] ?? label(l.source)}</Td>
                   <Td><Badge tone={leadTone[l.status]}>{label(l.status)}</Badge></Td>
                   <Td className="num">{l.estimated_value ? money(l.estimated_value, l.currency) : ""}</Td>
                   <Td className="text-ink-soft">{l.owner_id ? names.get(l.owner_id) : "Unassigned"}</Td>

@@ -71,7 +71,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/settings/members", label: "Team" },
         { href: "/settings/pipeline", label: "Pipeline stages" },
         { href: "/settings/import", label: "Import" },
-        ...(ctx.can("company.manage") ? [{ href: "/settings/integrations", label: "Integrations" }] : []),
+        ...(ctx.can("company.manage") ? [{ href: "/settings/channels", label: "Listings and leads" }, { href: "/settings/integrations", label: "Integrations" }] : []),
         ...(ctx.can("audit.read") ? [{ href: "/settings/audit", label: "Audit log" }] : []),
       ],
     },
