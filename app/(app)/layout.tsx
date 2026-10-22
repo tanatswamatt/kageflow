@@ -27,6 +27,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/sales/orders", label: "Orders" },
         { href: "/sales/invoices", label: "Invoices" },
         { href: "/sales/credit-notes", label: "Credit notes" },
+        ...(ctx.can("sales.write") ? [{ href: "/sales/finance", label: "Finance applications" }] : []),
+        { href: "/sales/trade-ins", label: "Trade-ins" },
         { href: "/sales/payments", label: "Payments" },
         { href: "/sales/receivables", label: "Receivables" },
       ],

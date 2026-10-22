@@ -189,7 +189,7 @@ export type DocType = "quote" | "order" | "invoice" | "credit_note";
 export type DocStatus = "draft" | "sent" | "accepted" | "declined" | "open" | "fulfilled" | "cancelled" | "issued";
 export type UnitStatus = "on_order" | "in_transit" | "in_stock" | "reserved" | "sold" | "written_off";
 export type UnitCostKind = "purchase" | "transport" | "clearing" | "duty" | "repairs" | "other";
-export type PaymentMethod = "eft" | "cash" | "card" | "other";
+export type PaymentMethod = "eft" | "cash" | "card" | "other" | "trade_in" | "bank_payout";
 
 export const CURRENCIES = ["ZAR", "USD", "EUR", "GBP", "KES", "BWP", "ZMW", "MZN", "NAD", "ZWG"];
 export const UNIT_STATUSES: UnitStatus[] = ["on_order", "in_transit", "in_stock", "reserved", "sold", "written_off"];

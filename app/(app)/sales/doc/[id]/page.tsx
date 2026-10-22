@@ -8,6 +8,7 @@ import { CopyField } from "@/components/copy-field";
 import { DocEditor } from "@/components/sales/doc-editor";
 import { loadCatalog, loadCustomers, loadTaxes } from "@/lib/catalog";
 import { getContext } from "@/lib/context";
+import { FINANCE_LABEL } from "@/lib/finance";
 import { amount, date, money } from "@/lib/format";
 import { docTone } from "@/lib/badges";
 import { DOC_LABEL, DOC_SLUG, docStatusLabel, docTitle } from "@/lib/sales";
@@ -40,6 +41,12 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
     doc.doc_type === "order" ? ctx.supabase.from("customer_payments").select("*").eq("order_id", id).is("reversal_journal_id", null).order("payment_date") : Promise.resolve({ data: [] }),
   ]);
   const lines = (lineData ?? []) as SalesLine[];
+  const [{ data: finApps }, { data: tradeIns }] = doc.doc_type === "order" && !draft
+    ? await Promise.all([
+        canWrite ? ctx.supabase.from("finance_applications").select("id, number, status").eq("order_id", id).order("created_at") : Promise.resolve({ data: [] }),
+        ctx.supabase.from("trade_ins").select("id, number, status, allowance, make, model").eq("order_id", id).order("created_at"),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   const editor = draft && canWrite
     ? await Promise.all([loadCustomers(ctx), loadCatalog(ctx, { creditFor: doc.doc_type === "credit_note" ? doc.source_doc_id : null }), loadTaxes(ctx)])
@@ -229,6 +236,23 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
                 {doc.doc_type === "order" && doc.status === "fulfilled" && <p className="text-ink-soft">Invoiced and fulfilled.</p>}
               </div>
               {doc.doc_type === "order" && doc.status === "draft" && <p className="mt-3 text-[13px] text-ink-faint">Confirming reserves the vehicles on this order.</p>}
+            </Panel>
+          )}
+
+          {doc.doc_type === "order" && doc.status !== "draft" && canWrite && (
+            <Panel title="Finance and trade-in">
+              <ul className="mb-3 flex flex-col gap-1.5 text-sm">
+                {((finApps ?? []) as { id: string; number: string | null; status: string }[]).map((f) => (
+                  <li key={f.id}><Link className="text-shadow-700 hover:underline" href={`/sales/finance/${f.id}`}>{f.number}</Link> <span className="text-ink-faint">finance, {FINANCE_LABEL[f.status]?.toLowerCase()}</span></li>
+                ))}
+                {((tradeIns ?? []) as { id: string; number: string | null; status: string; allowance: number | null; make: string | null; model: string | null }[]).map((t) => (
+                  <li key={t.id}><Link className="text-shadow-700 hover:underline" href={`/sales/trade-ins/${t.id}`}>{t.number}</Link> <span className="text-ink-faint">trade-in {[t.make, t.model].filter(Boolean).join(" ")}, {t.status === "draft" ? "offer" : t.status}</span></li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/sales/finance/new?order=${id}`} className="text-[13px] font-medium text-shadow-700 hover:underline">+ Finance application</Link>
+                <Link href={`/sales/trade-ins/new?order=${id}`} className="text-[13px] font-medium text-shadow-700 hover:underline">+ Trade-in</Link>
+              </div>
             </Panel>
           )}
 
