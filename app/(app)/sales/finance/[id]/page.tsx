@@ -116,6 +116,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                   <div className="text-xs text-ink-faint">Sent {date(s.submitted_at.slice(0, 10))}{s.reference ? ` · ref ${s.reference}` : ""}</div>
                   {s.instalment != null && <div className="mt-1 text-sm">{money(s.approved_amount)} at {Number(s.rate)}% over {s.term_months} months: <strong>{money(s.instalment)}</strong> a month</div>}
                   {s.conditions && <div className="mt-1 text-xs text-ink-soft">{s.conditions}</div>}
+                  {s.dic_amount != null && Number(s.dic_amount) > 0 && <div className="mt-1 text-xs text-jade-700">Dealer commission {money(s.dic_amount)}</div>}
                   {s.status === "paid_out" ? (
                     <div className="mt-2 text-sm text-jade-700">Paid out {money(s.payout_amount)} on {date(s.payout_date)}</div>
                   ) : !cancelled && (
@@ -129,6 +130,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                         <Field label="Term"><Input name="term_months" inputMode="numeric" defaultValue={n(s.term_months ?? app.term_months)} /></Field>
                         <Field label="Instalment"><Input name="instalment" inputMode="decimal" defaultValue={n(s.instalment)} /></Field>
                         <Field label="Balloon (R)"><Input name="balloon_amount" inputMode="decimal" defaultValue={n(s.balloon_amount)} /></Field>
+                        <Field label="Dealer commission (DIC, R)"><Input name="dic_amount" inputMode="decimal" defaultValue={n(s.dic_amount)} /></Field>
                         <Field label="Bank ref"><Input name="reference" defaultValue={s.reference ?? ""} /></Field>
                         <Field label="Conditions" className="col-span-2"><Input name="conditions" defaultValue={s.conditions ?? ""} placeholder="e.g. proof of income, 10% deposit" /></Field>
                         <div className="col-span-2"><SubmitButton size="sm">Save answer</SubmitButton></div>

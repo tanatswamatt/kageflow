@@ -37,6 +37,15 @@ export default async function DashboardPage() {
   const byStage = stages.map((s) => ({ stage: s, value: deals.filter((d) => d.stage_id === s.id).reduce((t, d) => t + Number(d.value), 0), count: deals.filter((d) => d.stage_id === s.id).length }));
   const maxStage = Math.max(1, ...byStage.map((b) => b.value));
   const now = Date.now();
+  const showProfit = ctx.can("ledger.write");
+  const { data: lotData } = showProfit
+    ? await ctx.supabase.from("vehicle_profit").select("status, sold_on, days_in_stock, landed_cost, gross_profit, addon_profit, finance_income, commission").eq("company_id", ctx.companyId).or(`status.in.(in_stock,reserved),sold_on.gte.${monthStart.slice(0, 10)}`)
+    : { data: [] };
+  const lot = (lotData ?? []) as { status: string; sold_on: string | null; days_in_stock: number; landed_cost: number; gross_profit: number | null; addon_profit: number | null; finance_income: number; commission: number | null }[];
+  const soldMonth = lot.filter((v) => v.status === "sold");
+  const inStock = lot.filter((v) => v.status !== "sold");
+  const netMonth = soldMonth.reduce((s, v) => s + Number(v.gross_profit ?? 0) + Number(v.addon_profit ?? 0) + Number(v.finance_income ?? 0) - Number(v.commission ?? 0), 0);
+  const aged = inStock.filter((v) => v.days_in_stock > 90).length;
 
   return (
     <>
@@ -50,6 +59,14 @@ export default async function DashboardPage() {
           </>
         )}
       />
+      {showProfit && (
+        <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Cars sold this month" value={String(soldMonth.length)} />
+          <Stat label="Net profit on cars this month" value={<Link className="hover:underline" href="/reports/profit-per-car">{money(netMonth, base)}</Link>} sub={soldMonth.length ? `${money(netMonth / soldMonth.length, base)} a car` : undefined} />
+          <Stat label="Cars in stock" value={String(inStock.length)} sub={`${money(inStock.reduce((s, v) => s + Number(v.landed_cost), 0), base)} at cost`} />
+          <Stat label="In stock over 90 days" value={<Link className={aged ? "text-amber-700 hover:underline" : "hover:underline"} href="/reports/profit-per-car?tab=stock">{aged}</Link>} />
+        </div>
+      )}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Open pipeline" value={money(pipeline, base)} sub={`${deals.length} open deals`} />
         <Stat label="Won this month" value={money(won, base)} />

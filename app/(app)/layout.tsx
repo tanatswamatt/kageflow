@@ -29,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/sales/credit-notes", label: "Credit notes" },
         ...(ctx.can("sales.write") ? [{ href: "/sales/finance", label: "Finance applications" }] : []),
         { href: "/sales/trade-ins", label: "Trade-ins" },
+        { href: "/sales/commissions", label: "Commission" },
         { href: "/sales/payments", label: "Payments" },
         { href: "/sales/receivables", label: "Receivables" },
       ],
@@ -51,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     {
       title: "Reports",
       items: [
+        ...(ctx.can("ledger.write") ? [{ href: "/reports/profit-per-car", label: "Profit per car" }] : []),
         { href: "/reports/profit-loss", label: "Profit and loss" },
         { href: "/reports/balance-sheet", label: "Balance sheet" },
         { href: "/reports/vat", label: "VAT201" },

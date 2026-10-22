@@ -8,6 +8,8 @@ import { CopyField } from "@/components/copy-field";
 import { DocEditor } from "@/components/sales/doc-editor";
 import { loadCatalog, loadCustomers, loadTaxes } from "@/lib/catalog";
 import { getContext } from "@/lib/context";
+import { setSalesperson } from "../../commissions/actions";
+import { getMembers } from "@/lib/members";
 import { FINANCE_LABEL } from "@/lib/finance";
 import { amount, date, money } from "@/lib/format";
 import { docTone } from "@/lib/badges";
@@ -41,6 +43,8 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
     doc.doc_type === "order" ? ctx.supabase.from("customer_payments").select("*").eq("order_id", id).is("reversal_journal_id", null).order("payment_date") : Promise.resolve({ data: [] }),
   ]);
   const lines = (lineData ?? []) as SalesLine[];
+  const teamList = await getMembers();
+  const salesName = (doc as { salesperson_id?: string | null }).salesperson_id ? teamList.find((m) => m.user_id === (doc as { salesperson_id?: string | null }).salesperson_id)?.name ?? null : null;
   const [{ data: finApps }, { data: tradeIns }] = doc.doc_type === "order" && !draft
     ? await Promise.all([
         canWrite ? ctx.supabase.from("finance_applications").select("id, number, status").eq("order_id", id).order("created_at") : Promise.resolve({ data: [] }),
@@ -199,12 +203,23 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
                 ...(doc.doc_type === "invoice" ? ([["Due", date(doc.due_date)]] as [string, string][]) : []),
                 ["Currency", foreign ? `${doc.currency} at ${Number(doc.fx_rate)}` : doc.currency],
                 ["Reference", doc.reference],
+                ["Salesperson", salesName ?? "Not set"],
                 ...(doc.doc_type === "order" ? ([["Tracking", doc.tracking_stage]] as [string, string | null][]) : []),
                 ...(doc.credit_reason ? ([["Reason", doc.credit_reason]] as [string, string][]) : []),
                 ...(doc.journal_id ? ([["Ledger", <Link key="j" className="text-shadow-700 hover:underline" href={`/accounting/journals/${doc.journal_id}`}>View journal</Link>]] as [string, React.ReactNode][]) : []),
               ]}
             />
-          </Panel>
+                      {ctx.can("ledger.write") && !draft && (
+              <form action={setSalesperson} className="mt-3 flex gap-1.5">
+                <input type="hidden" name="doc_id" value={id} />
+                <select name="user_id" defaultValue={(doc as { salesperson_id?: string | null }).salesperson_id ?? ""} aria-label="Salesperson" className="h-8 min-w-0 flex-1 rounded-[var(--radius-control)] border border-line-strong bg-surface px-2 text-[13px]">
+                  <option value="">No salesperson</option>
+                  {teamList.map((m) => <option key={m.user_id} value={m.user_id}>{m.name}</option>)}
+                </select>
+                <SubmitButton size="sm" tone="quiet" pendingText="…">Change</SubmitButton>
+              </form>
+            )}
+</Panel>
 
           {canWrite && (
             <Panel title="Next step">

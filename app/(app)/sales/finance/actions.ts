@@ -136,7 +136,7 @@ export async function updateSubmission(fd: FormData) {
   const { error } = await ctx.supabase.from("finance_submissions").update({
     status, reference: str(fd, "reference"),
     approved_amount: num(fd, "approved_amount"), rate: num(fd, "rate"), term_months: num(fd, "term_months"),
-    balloon_amount: num(fd, "balloon_amount"), instalment: num(fd, "instalment"), conditions: str(fd, "conditions"),
+    balloon_amount: num(fd, "balloon_amount"), instalment: num(fd, "instalment"), conditions: str(fd, "conditions"), dic_amount: num(fd, "dic_amount"),
     decided_at: status === "submitted" ? null : new Date().toISOString(),
   }).eq("id", str(fd, "id")).eq("company_id", ctx.companyId);
   if (error) fail(back, cleanError(error.message));

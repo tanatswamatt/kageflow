@@ -6,6 +6,7 @@ import { getMembers } from "@/lib/members";
 import { date, label } from "@/lib/format";
 import { ROLES } from "@/lib/types";
 import { addMember, changeRole, removeMember } from "../actions";
+import { savePlan } from "../../sales/commissions/actions";
 
 export const metadata: Metadata = { title: "Team" };
 
@@ -22,6 +23,8 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
   const ctx = await getContext();
   const members = await getMembers();
   const canManage = ctx.can("company.manage");
+  const { data: planData } = canManage ? await ctx.supabase.from("commission_plans").select("user_id, basis, rate, min_amount").eq("company_id", ctx.companyId) : { data: [] };
+  const plans = new Map(((planData ?? []) as { user_id: string; basis: string; rate: number; min_amount: number }[]).map((p) => [p.user_id, p]));
 
   return (
     <>
@@ -90,6 +93,38 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
           </Panel>
         )}
       </div>
+      {canManage && (
+        <Panel title="Commission plans" className="mt-6" flush>
+          <p className="px-5 pt-4 text-[13px] text-ink-soft">Commission is worked out when an invoice is issued, from the salesperson on that invoice. Gross profit is the selling price excluding VAT, less the car&apos;s landed cost.</p>
+          <Table>
+            <thead><tr><Th>Salesperson</Th><Th>Paid on</Th><Th>Rate</Th><Th>Minimum per car (R)</Th><Th /></tr></thead>
+            <tbody>
+              {members.map((m) => {
+                const p = plans.get(m.user_id);
+                const fid = `plan-${m.user_id}`;
+                return (
+                  <tr key={m.user_id}>
+                    <Td className="font-medium">{m.name}</Td>
+                    <Td>
+                      <Select form={fid} name="basis" defaultValue={p?.basis ?? ""} className="h-8 text-[13px]" aria-label={`Commission basis for ${m.name}`}>
+                        <option value="">No commission</option>
+                        <option value="gross_profit_pct">% of gross profit</option>
+                        <option value="sale_pct">% of selling price</option>
+                        <option value="flat_per_car">Flat amount per car</option>
+                      </Select>
+                    </Td>
+                    <Td><Input form={fid} name="rate" inputMode="decimal" defaultValue={p ? String(Number(p.rate)) : ""} placeholder="10" className="h-8 w-24 text-[13px]" aria-label="Rate" /></Td>
+                    <Td><Input form={fid} name="min_amount" inputMode="decimal" defaultValue={p ? String(Number(p.min_amount)) : ""} placeholder="0" className="h-8 w-28 text-[13px]" aria-label="Minimum" /></Td>
+                    <Td className="text-right">
+                      <form id={fid} action={savePlan}><input type="hidden" name="user_id" value={m.user_id} /><SubmitButton size="sm" tone="secondary" pendingText="…">Save</SubmitButton></form>
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </Panel>
+      )}
     </>
   );
 }

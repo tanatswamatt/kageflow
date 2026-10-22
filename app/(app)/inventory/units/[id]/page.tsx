@@ -9,6 +9,7 @@ import { getContext } from "@/lib/context";
 import { amount, date, label, money, today } from "@/lib/format";
 import { unitTone } from "@/lib/badges";
 import { UNIT_COST_KINDS, type Unit, type UnitCost, type VehiclePhoto } from "@/lib/types";
+import { askingNet, netProfit, type VehicleProfit } from "@/lib/profit";
 import { addCost, makeMainPhoto, registerPhotos, removePhoto, reverseCost, saveAdvert, updateUnit } from "../../actions";
 
 const TRANSMISSIONS = ["Manual", "Automatic"];
@@ -35,6 +36,9 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
   ]);
   const { data: photoData } = await ctx.supabase.from("vehicle_photos").select("id, unit_id, url, storage_path, position").eq("unit_id", id).order("position").order("created_at");
   const photos = (photoData ?? []) as VehiclePhoto[];
+  const { data: profitData } = ctx.can("ledger.write") ? await ctx.supabase.from("vehicle_profit").select("*").eq("unit_id", id).maybeSingle() : { data: null };
+  const vp = profitData as VehicleProfit | null;
+  const ask = vp ? askingNet(vp, !!ctx.company.vat_no?.trim()) : null;
   const canAdvert = ctx.can("inventory.write");
   const options = (list: string[], current: string | null) => [...new Set([...(current ? [current] : []), ...list])];
   const costList = (costs ?? []) as UnitCost[];
@@ -117,7 +121,7 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
                 <input type="hidden" name="unit_id" value={id} />
                 <Field label="Cost">
                   <Select name="kind" defaultValue={live.length ? "transport" : "purchase"}>
-                    {UNIT_COST_KINDS.map((k) => <option key={k} value={k}>{label(k)}</option>)}
+                    {UNIT_COST_KINDS.map((k) => <option key={k} value={k}>{k === "repairs" ? "Reconditioning and repairs" : label(k)}</option>)}
                   </Select>
                 </Field>
                 <Field label={`Amount excl. VAT (${base})`}><Input name="amount" inputMode="decimal" required /></Field>
@@ -172,6 +176,29 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
             )}
             {canAdvert && !final && <PhotoUploader companyId={ctx.companyId} unitId={id} register={registerPhotos} />}
           </Panel>
+          {vp && (
+            <Panel title={vp.invoice_id ? "Profit on this car" : "Expected profit"}>
+              {vp.invoice_id ? (
+                <Dl items={[
+                  ["Sold for (excl. VAT)", money(vp.sale_net)],
+                  ["Cost of the car", `-${money(vp.cogs ?? vp.landed_cost)}`],
+                  ["Gross profit", <strong key="g" className={Number(vp.gross_profit) < 0 ? "text-ember-700" : ""}>{money(vp.gross_profit)}</strong>],
+                  ...(Number(vp.addon_profit) ? ([["Add-ons", money(vp.addon_profit)]] as [string, string][]) : []),
+                  ...(Number(vp.finance_income) ? ([["Finance commission", money(vp.finance_income)]] as [string, string][]) : []),
+                  ...(Number(vp.commission) ? ([["Sales commission", `-${money(vp.commission)}`]] as [string, string][]) : []),
+                  ["Net profit", <strong key="n" className={netProfit(vp) < 0 ? "text-ember-700" : "text-jade-700"}>{money(netProfit(vp))}</strong>],
+                  ["Days to sell", String(vp.days_in_stock)],
+                ]} />
+              ) : (
+                <Dl items={[
+                  ["Landed cost so far", money(vp.landed_cost)],
+                  ["Asking excl. VAT", ask !== null ? money(ask) : "Set a price"],
+                  ["Gross at asking", ask !== null ? <strong key="e" className={ask - Number(vp.landed_cost) < 0 ? "text-ember-700" : ""}>{money(ask - Number(vp.landed_cost))}</strong> : ""],
+                  ["Days in stock", <span key="d" className={vp.days_in_stock > 90 ? "font-semibold text-amber-700" : ""}>{vp.days_in_stock}</span>],
+                ]} />
+              )}
+            </Panel>
+          )}
           <Panel title="Summary">
             <Dl
               items={[
