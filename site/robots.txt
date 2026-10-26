@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kageflow.co.za/sitemap.xml
