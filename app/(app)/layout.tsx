@@ -38,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       title: "Stock",
       items: [
         { href: "/inventory/units", label: "Vehicles" },
+        ...(ctx.can("inventory.write") ? [{ href: "/inventory/quick-add", label: "Add a car" }, { href: "/inventory/stock-check", label: "Stock check" }] : []),
         { href: "/inventory/products", label: "Products" },
       ],
     },

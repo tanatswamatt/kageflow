@@ -37,7 +37,13 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
       <PageHeader
         title="Vehicles"
         description={view.key !== "sold" ? <>Landed cost of vehicles in this view: <strong className="font-semibold text-ink">{money(stockValue, base)}</strong></> : "Vehicles sold, with the invoice that sold them."}
-        actions={ctx.can("inventory.write") && <ButtonLink href="/inventory/units/new" tone="primary">Add vehicle</ButtonLink>}
+        actions={ctx.can("inventory.write") && (
+          <>
+            <ButtonLink href="/inventory/stock-check">Stock check</ButtonLink>
+            <ButtonLink href="/inventory/units/new">Full form</ButtonLink>
+            <ButtonLink href="/inventory/quick-add" tone="primary">Add a car</ButtonLink>
+          </>
+        )}
       />
       <Notice params={sp} />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
