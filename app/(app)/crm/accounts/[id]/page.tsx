@@ -8,6 +8,8 @@ import { ConsentFields } from "@/components/crm/consent-fields";
 import { ActivityFeed } from "@/components/crm/activity-feed";
 import { LogActivity } from "@/components/crm/log-activity";
 import { getContext } from "@/lib/context";
+import { Timeline } from "@/components/timeline";
+import type { ObjectEvent } from "@/lib/ontology";
 import { getMembers } from "@/lib/members";
 import { date, label, money, personName } from "@/lib/format";
 import { dealTone, docTone, kindTone } from "@/lib/badges";
@@ -17,7 +19,7 @@ import { createContact, deleteAccount, updateAccount } from "../../actions";
 
 export const metadata: Metadata = { title: "Account" };
 
-export default async function AccountPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; ok?: string; edit?: string }> }) {
+export default async function AccountPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; ok?: string; edit?: string; h?: string }> }) {
   const { id } = await params;
   const notice = await searchParams;
   const ctx = await getContext();
@@ -35,6 +37,7 @@ export default async function AccountPage({ params, searchParams }: { params: Pr
     ctx.supabase.from("sales_docs").select("id, doc_type, number, status, total, currency, amount_due, issue_date, due_date").eq("company_id", ctx.companyId).eq("account_id", id).order("created_at", { ascending: false }).limit(20),
   ]);
   const names = new Map(members.map((m) => [m.user_id, m.name]));
+  const { data: eventData } = await ctx.supabase.from("object_events").select("*").eq("company_id", ctx.companyId).eq("subject_type", "customer").eq("subject_id", id).order("at", { ascending: false }).limit(400);
   const docs = (salesDocs ?? []) as Pick<SalesDoc, "id" | "doc_type" | "number" | "status" | "total" | "currency" | "amount_due" | "issue_date" | "due_date">[];
   const owing = new Map<string, number>();
   for (const d of docs) if (d.doc_type === "invoice" && d.status === "issued" && Number(d.amount_due) > 0) owing.set(d.currency, (owing.get(d.currency) ?? 0) + Number(d.amount_due));
@@ -118,7 +121,11 @@ export default async function AccountPage({ params, searchParams }: { params: Pr
             )}
           </Panel>
 
-          <Panel title="Timeline" flush>
+          <Panel title="Everything with this customer" action={<span className="text-xs text-ink-faint">Sales, money, finance, trade-ins, messages and bills</span>}>
+            <Timeline events={(eventData ?? []) as ObjectEvent[]} basePath={`/crm/accounts/${id}`} active={notice.h} />
+          </Panel>
+
+          <Panel title="Calls, meetings and notes" flush>
             {canWrite && <LogActivity refs={{ account_id: account.id }} back={back} />}
             <ActivityFeed activities={(acts ?? []) as Activity[]} names={names} back={back} canWrite={canWrite} />
           </Panel>

@@ -18,6 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/crm/accounts", label: "Accounts" },
         { href: "/crm/contacts", label: "Contacts" },
         { href: "/crm/activities", label: "Activities" },
+        { href: "/crm/duplicates", label: "Duplicates" },
       ],
     },
     {
@@ -76,6 +77,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/settings/members", label: "Team" },
         { href: "/settings/pipeline", label: "Pipeline stages" },
         { href: "/settings/import", label: "Import" },
+        { href: "/settings/data-model", label: "Data model" },
         ...(ctx.can("company.manage") ? [{ href: "/settings/channels", label: "Listings and leads" }, { href: "/settings/integrations", label: "Integrations" }] : []),
         ...(ctx.can("audit.read") ? [{ href: "/settings/audit", label: "Audit log" }] : []),
       ],
@@ -97,6 +99,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             New invoice
           </a>
         )}
+        <form action="/search" className="mx-1">
+          <input name="q" type="search" placeholder="Search everything" aria-label="Search everything" className="h-9 w-full rounded-[var(--radius-control)] border border-shadow-700 bg-shadow-800 px-3 text-[14px] text-white placeholder:text-shadow-300 focus:border-shadow-300 focus:outline-none" />
+        </form>
         <div className="hidden lg:block">
           <SidebarNav groups={groups} />
         </div>

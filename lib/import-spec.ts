@@ -38,6 +38,54 @@ export const IMPORTS: Record<ImportType, { label: string; help: string; columns:
   },
 };
 
+/** Other names the same column goes by in Sage, Pastel, Xero, VMG and spreadsheet exports */
+export const ALIASES: Record<string, string[]> = {
+  name: ["customer name", "account name", "customer", "client", "client name", "company", "company name", "name"],
+  kind: ["type", "account type", "category"],
+  email: ["e-mail", "email address", "e-mail address", "mail"],
+  phone: ["telephone", "tel", "telephone 1", "phone number", "cell", "cellphone", "cell no", "mobile", "contact number", "contact no"],
+  vat_no: ["vat number", "vat no", "vat reg no", "vat registration", "tax number", "tax reference", "tax no"],
+  billing_address: ["address", "postal address", "physical address", "address 1", "address line 1", "street"],
+  city: ["town", "suburb", "city/town"],
+  country: ["country code"],
+  payment_days: ["terms", "payment terms", "days"],
+  first_name: ["first name", "firstname", "given name", "name"],
+  last_name: ["last name", "surname", "lastname", "family name"],
+  account_name: ["company", "customer", "account"],
+  job_title: ["title", "position", "role"],
+  sku: ["code", "item code", "product code", "stock code"],
+  sale_price: ["price", "selling price", "retail price", "price excl"],
+  vin: ["vin", "vin number", "vin no", "chassis", "chassis number", "chassis no", "serial", "serial number"],
+  make: ["manufacturer", "brand"],
+  model: ["model name", "range"],
+  variant: ["derivative", "description", "spec", "trim", "series"],
+  year: ["model year", "reg year", "year model", "first registered"],
+  colour: ["color", "colour name", "exterior colour"],
+  mileage_km: ["mileage", "odometer", "km", "kms", "kilometres", "odo"],
+  location: ["branch", "site", "yard", "lot"],
+  list_price: ["selling price", "retail", "retail price", "price", "asking price", "advertised price"],
+  opening_cost: ["cost", "cost price", "purchase price", "stand in", "stand-in", "stand in value", "trade price", "book value"],
+  account_code: ["code", "account", "gl code", "account number"],
+};
+
+const norm = (h: string) => h.trim().toLowerCase().replace(/[_\s]+/g, " ").replace(/[^a-z0-9 /-]/g, "");
+
+/** For each column Kageflow wants, the file column that most likely holds it (-1 if none) */
+export function autoMap(headers: string[], columns: string[]): Record<string, number> {
+  const h = headers.map(norm);
+  const used = new Set<number>();
+  const out: Record<string, number> = {};
+  for (const c of columns) {
+    const names = [norm(c), ...(ALIASES[c] ?? []).map(norm)];
+    let idx = h.findIndex((x, i) => !used.has(i) && x === norm(c));
+    if (idx < 0) idx = h.findIndex((x, i) => !used.has(i) && names.includes(x));
+    if (idx < 0) idx = h.findIndex((x, i) => !used.has(i) && names.some((n) => n.length > 3 && x.includes(n)));
+    out[c] = idx;
+    if (idx >= 0) used.add(idx);
+  }
+  return out;
+}
+
 /** Minimal RFC 4180 CSV parser: quoted fields, escaped quotes, CRLF */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];

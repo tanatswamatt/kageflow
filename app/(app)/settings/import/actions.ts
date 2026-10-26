@@ -16,10 +16,56 @@ const numOrNull = (v: string | undefined) => {
   return Number.isFinite(n) ? n : NaN;
 };
 
+export type RowMatch = { i: number; id: string | null; name: string | null; on: string | null; dupOf: number | null };
+
+const phoneKey = (p: string | undefined) => {
+  const d = (p ?? "").replace(/\D/g, "");
+  if (d.length < 9) return null;
+  return d.startsWith("0") && d.length === 10 ? `27${d.slice(1)}` : d;
+};
+const nameKey = (n: string | undefined) => (n ?? "").toLowerCase().replace(/\b(pty|ltd|limited|cc|inc|the|and)\b|[()]|[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+/** Finds which rows are already in Kageflow (and which repeat an earlier row in the same file) before anything is written */
+export async function checkMatches(type: ImportType, rows: Record<string, string>[]): Promise<{ matches?: RowMatch[]; error?: string }> {
+  const ctx = await getContext();
+  if (rows.length > 2000) return { error: "Import up to 2 000 rows at a time" };
+  const out: RowMatch[] = rows.map((_, i) => ({ i, id: null, name: null, on: null, dupOf: null }));
+  if (type === "customers") {
+    const { data, error } = await ctx.supabase.rpc("match_accounts", {
+      p_company: ctx.companyId,
+      p_rows: rows.map((r, i) => ({ i, name: r.name ?? "", email: r.email ?? "", phone: r.phone ?? "", vat_no: r.vat_no ?? "" })),
+    });
+    if (error) return { error: cleanError(error.message) };
+    for (const m of (data ?? []) as { i: number; account_id: string; account_name: string; matched_on: string }[]) {
+      out[m.i] = { ...out[m.i]!, id: m.account_id, name: m.account_name, on: m.matched_on };
+    }
+    const seen = new Map<string, number>();
+    rows.forEach((r, i) => {
+      const keys = [r.vat_no?.replace(/\s/g, ""), r.email?.toLowerCase().trim(), phoneKey(r.phone), nameKey(r.name)].filter((k): k is string => !!k);
+      const first = keys.map((k) => seen.get(k)).find((x) => x !== undefined);
+      if (first !== undefined && !out[i]!.id) out[i] = { ...out[i]!, dupOf: first };
+      for (const k of keys) if (!seen.has(k)) seen.set(k, i);
+    });
+  }
+  if (type === "vehicles") {
+    const vins = rows.map((r) => (r.vin ?? "").toUpperCase().replace(/[^A-Z0-9]/g, ""));
+    const { data } = await ctx.supabase.from("inventory_units").select("id, serial_no, stock_no, make, model").eq("company_id", ctx.companyId).in("serial_no", vins.filter(Boolean));
+    const byVin = new Map(((data ?? []) as { id: string; serial_no: string; stock_no: string | null; make: string | null; model: string | null }[]).map((u) => [u.serial_no.toUpperCase(), u]));
+    const seen = new Map<string, number>();
+    vins.forEach((v, i) => {
+      const u = byVin.get(v);
+      if (u) out[i] = { ...out[i]!, id: u.id, name: `${u.stock_no ?? ""} ${[u.make, u.model].filter(Boolean).join(" ")}`.trim(), on: "VIN" };
+      else if (v && seen.has(v)) out[i] = { ...out[i]!, dupOf: seen.get(v)! };
+      if (v && !seen.has(v)) seen.set(v, i);
+    });
+  }
+  return { matches: out };
+}
+
 export async function importRows(fd: FormData) {
   const ctx = await getContext();
   const type = str(fd, "type") as ImportType;
-  let rows: Record<string, string>[] = [];
+  let rows: (Record<string, string> & { _action?: string; _match?: string })[] = [];
   try {
     rows = JSON.parse(str(fd, "rows") ?? "[]");
   } catch {
@@ -32,21 +78,45 @@ export async function importRows(fd: FormData) {
 
   if (type === "customers") {
     if (!ctx.can("crm.write")) fail(BACK, "Your role can't add customers");
-    const out = rows.map((r, i) => {
-      if (!r.name) bad(i, "name is empty");
+    const prepared = rows.map((r, i) => {
+      if (!r.name && r._action !== "skip" && r._action !== "update") bad(i, "name is empty");
       const days = numOrNull(r.payment_days);
       if (Number.isNaN(days)) bad(i, "payment_days isn't a number");
       return {
-        company_id: ctx.companyId, name: r.name, kind: KINDS.includes((r.kind ?? "").toLowerCase()) ? r.kind!.toLowerCase() : "customer",
-        email: r.email || null, phone: r.phone || null, vat_no: r.vat_no || null, billing_address: r.billing_address || null,
-        city: r.city || null, country: r.country ? r.country.toUpperCase().slice(0, 2) : null, payment_days: days, owner_id: ctx.user.id,
+        action: r._action === "update" && r._match ? "update" : r._action === "skip" ? "skip" : "create",
+        match: r._match || null,
+        row: {
+          name: r.name, kind: KINDS.includes((r.kind ?? "").toLowerCase()) ? r.kind!.toLowerCase() : "customer",
+          email: r.email || null, phone: r.phone || null, vat_no: r.vat_no || null, billing_address: r.billing_address || null,
+          city: r.city || null, country: r.country ? r.country.toUpperCase().slice(0, 2) : null, payment_days: days,
+        },
       };
     });
     if (errors.length) fail(BACK, errors.slice(0, 5).join(". "));
-    const { error } = await ctx.supabase.from("crm_accounts").insert(out);
-    if (error) fail(BACK, cleanError(error.message));
+    const creates = prepared.filter((p) => p.action === "create").map((p) => ({ ...p.row, company_id: ctx.companyId, owner_id: ctx.user.id }));
+    if (creates.length) {
+      const { error } = await ctx.supabase.from("crm_accounts").insert(creates);
+      if (error) fail(BACK, cleanError(error.message));
+    }
+    const updates = prepared.filter((p) => p.action === "update");
+    if (updates.length) {
+      const { data: existing } = await ctx.supabase.from("crm_accounts").select("*").eq("company_id", ctx.companyId).in("id", updates.map((u) => u.match!));
+      const byId = new Map(((existing ?? []) as Record<string, unknown>[]).map((e) => [e.id as string, e]));
+      for (const u of updates) {
+        const e = byId.get(u.match!);
+        if (!e) continue;
+        // fill gaps only: nothing already in Kageflow is overwritten
+        const patch: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(u.row)) if (v !== null && v !== "" && (e[k] === null || e[k] === "") && k !== "name") patch[k] = v;
+        if (e.kind === "prospect" && u.row.kind !== "prospect") patch.kind = u.row.kind;
+        if (Object.keys(patch).length) {
+          const { error } = await ctx.supabase.from("crm_accounts").update(patch).eq("id", u.match!).eq("company_id", ctx.companyId);
+          if (error) fail(BACK, cleanError(error.message));
+        }
+      }
+    }
     revalidatePath("/crm/accounts");
-    done(BACK, `${out.length} customers imported`);
+    done(BACK, `${creates.length} new customers, ${updates.length} existing ones topped up, ${prepared.length - creates.length - updates.length} skipped`);
   }
 
   if (type === "contacts") {
@@ -99,6 +169,25 @@ export async function importRows(fd: FormData) {
     if (withCost && !ctx.can("inventory.costs")) fail(BACK, "Only owners, admins and accountants can import opening costs. Remove the opening_cost column or ask them.");
     if (withCost && !credit) fail(BACK, "Choose the account to credit opening costs to");
     const seen = new Set<string>();
+    const updatesV = rows.filter((r) => r._action === "update" && r._match);
+    rows = rows.filter((r) => r._action !== "skip" && r._action !== "update");
+    for (const r of updatesV) {
+      const year = numOrNull(r.year), km = numOrNull(r.mileage_km), price = numOrNull(r.list_price);
+      const patch: Record<string, unknown> = {};
+      if (r.make) patch.make = r.make;
+      if (r.model) patch.model = r.model;
+      if (r.variant) patch.variant = r.variant;
+      if (r.colour) patch.colour = r.colour;
+      if (r.location) patch.location = r.location;
+      if (year && !Number.isNaN(year)) patch.year = Math.round(year);
+      if (km !== null && !Number.isNaN(km)) patch.mileage_km = Math.round(km);
+      if (price !== null && !Number.isNaN(price)) patch.list_price = price;
+      if (Object.keys(patch).length) {
+        const { error } = await ctx.supabase.from("inventory_units").update(patch).eq("id", r._match!).eq("company_id", ctx.companyId);
+        if (error) fail(BACK, `Updating ${r.vin}: ${cleanError(error.message)}`);
+      }
+    }
+    if (rows.length === 0) done(BACK, `${updatesV.length} vehicles already in Kageflow were updated; nothing new to add`);
     const out = rows.map((r, i) => {
       const vin = (r.vin ?? "").toUpperCase().replace(/\s+/g, "");
       if (vin.length < 3) bad(i, "vin is missing or too short");
@@ -130,7 +219,7 @@ export async function importRows(fd: FormData) {
       posted++;
     }
     revalidatePath("/inventory", "layout");
-    done(BACK, `${out.length} vehicles imported${posted ? `, ${posted} opening costs posted` : ""}`);
+    done(BACK, `${out.length} vehicles imported${posted ? `, ${posted} opening costs posted` : ""}${updatesV.length ? `, ${updatesV.length} existing vehicles updated` : ""}`);
   }
 
   if (type === "opening_balances") {

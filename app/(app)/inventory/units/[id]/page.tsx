@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Select, Table, Td, Textarea, Th } from "@/components/ui";
 import { PhotoUploader } from "@/components/inventory/photo-uploader";
+import { Timeline } from "@/components/timeline";
+import type { ObjectEvent } from "@/lib/ontology";
 import { SubmitButton } from "@/components/submit-button";
 import { UnitFields } from "@/components/inventory/unit-fields";
 import { getContext } from "@/lib/context";
@@ -18,7 +20,7 @@ const BODIES = ["Bakkie (single cab)", "Bakkie (double cab)", "Bakkie (extended 
 
 export const metadata: Metadata = { title: "Vehicle" };
 
-export default async function UnitPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; ok?: string }> }) {
+export default async function UnitPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; ok?: string; h?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
   const ctx = await getContext();
@@ -38,6 +40,7 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
   const photos = (photoData ?? []) as VehiclePhoto[];
   const { data: profitData } = ctx.can("ledger.write") ? await ctx.supabase.from("vehicle_profit").select("*").eq("unit_id", id).maybeSingle() : { data: null };
   const vp = profitData as VehicleProfit | null;
+  const { data: eventData } = await ctx.supabase.from("object_events").select("*").eq("company_id", ctx.companyId).eq("subject_type", "vehicle").eq("subject_id", id).order("at", { ascending: false }).limit(300);
   const ask = vp ? askingNet(vp, !!ctx.company.vat_no?.trim()) : null;
   const canAdvert = ctx.can("inventory.write");
   const options = (list: string[], current: string | null) => [...new Set([...(current ? [current] : []), ...list])];
@@ -137,6 +140,10 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
                 <div className="flex items-end"><SubmitButton size="sm">Post cost</SubmitButton></div>
               </form>
             )}
+          </Panel>
+
+          <Panel title="History" action={<span className="text-xs text-ink-faint">Everything that happened to this car, from every department</span>}>
+            <Timeline events={(eventData ?? []) as ObjectEvent[]} basePath={`/inventory/units/${id}`} active={sp.h} />
           </Panel>
 
           {ctx.can("inventory.write") && (

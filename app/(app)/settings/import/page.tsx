@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Notice, PageHeader, Panel } from "@/components/ui";
 import { Importer } from "@/components/import/importer";
 import { getContext } from "@/lib/context";
-import { importRows } from "./actions";
+import { checkMatches, importRows } from "./actions";
 
 export const metadata: Metadata = { title: "Import" };
 
@@ -17,6 +17,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
       <Panel className="max-w-5xl">
         <Importer
           action={importRows}
+          check={checkMatches}
           canLedger={ctx.can("ledger.write")}
           creditAccounts={((accounts ?? []) as { id: string; code: string; name: string; system_key: string | null }[]).map((a) => ({ id: a.id, label: `${a.code} ${a.name}`, key: a.system_key }))}
         />
