@@ -3,7 +3,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Kageflow", template: "%s · Kageflow" },
-  description: "ERP and CRM for South African businesses",
+  description: "Dealer management software for Southern African car dealers",
+  // the app is private: search engines should only index the marketing site at www.kageflow.co.za
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
