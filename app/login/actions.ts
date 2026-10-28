@@ -4,10 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fail, str } from "@/lib/forms";
+import { safeNext } from "@/lib/safe-next";
 
-function safeNext(value: string | null): string {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
-}
 
 export async function signIn(fd: FormData) {
   const email = str(fd, "email");
@@ -17,7 +15,10 @@ export async function signIn(fd: FormData) {
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) fail("/login", error.message === "Invalid login credentials" ? "Email or password is incorrect" : error.message);
+  if (error) {
+    const m = error.message.toLowerCase();
+    fail("/login", m.includes("rate") || m.includes("too many") ? "Too many attempts. Wait a few minutes and try again" : m.includes("not confirmed") ? "Confirm your email first: check your inbox for the link" : "Email or password is incorrect");
+  }
   redirect(next);
 }
 
@@ -35,7 +36,13 @@ export async function signUp(fd: FormData) {
     password,
     options: { data: { full_name: fullName }, emailRedirectTo: `${origin}/auth/callback` },
   });
-  if (error) fail("/login?mode=signup", error.message);
+  if (error) {
+    const m = error.message.toLowerCase();
+    if (m.includes("password")) fail("/login?mode=signup", "Choose a stronger password: at least 8 characters, not one that has appeared in a data breach");
+    if (m.includes("rate") || m.includes("too many")) fail("/login?mode=signup", "Too many attempts. Wait a few minutes and try again");
+    if (!m.includes("already")) fail("/login?mode=signup", "We couldn't create the account. Check the email address and try again");
+    // an existing email gets the same answer as a new one, so accounts can't be discovered
+  }
   if (data.session) redirect("/onboarding");
   redirect(`/login?ok=${encodeURIComponent("Check your inbox to confirm your email, then sign in")}`);
 }

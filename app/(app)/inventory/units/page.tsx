@@ -26,6 +26,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
     const t = `*${q.replace(/[*%,()]/g, " ")}*`;
     query = query.or(`serial_no.ilike.${t},make.ilike.${t},model.ilike.${t},stock_no.ilike.${t}`);
   }
+  const seeCost = ctx.can("inventory.costs");
   const [{ data }, { data: values }] = await Promise.all([query, ctx.supabase.from("unit_values").select("unit_id, landed_cost").eq("company_id", ctx.companyId)]);
   const units = (data ?? []) as Unit[];
   const cost = new Map(((values ?? []) as { unit_id: string; landed_cost: number }[]).map((v) => [v.unit_id, Number(v.landed_cost)]));
@@ -36,7 +37,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Vehicles"
-        description={view.key !== "sold" ? <>Landed cost of vehicles in this view: <strong className="font-semibold text-ink">{money(stockValue, base)}</strong></> : "Vehicles sold, with the invoice that sold them."}
+        description={!seeCost ? (view.key !== "sold" ? "Vehicles in stock and on the way." : "Vehicles sold.") : view.key !== "sold" ? <>Landed cost of vehicles in this view: <strong className="font-semibold text-ink">{money(stockValue, base)}</strong></> : "Vehicles sold, with the invoice that sold them."}
         actions={ctx.can("inventory.write") && (
           <>
             <ButtonLink href="/inventory/stock-check">Stock check</ButtonLink>
@@ -62,7 +63,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
           <Empty title="No vehicles here">Add a vehicle, then post its purchase, transport and duty costs.</Empty>
         ) : (
           <Table>
-            <thead><tr><Th>Vehicle</Th><Th>VIN</Th><Th>Location</Th><Th>Status</Th><Th className="text-right">Landed cost ({base})</Th><Th className="text-right">Asking</Th></tr></thead>
+            <thead><tr><Th>Vehicle</Th><Th>VIN</Th><Th>Location</Th><Th>Status</Th>{seeCost && <Th className="text-right">Landed cost ({base})</Th>}<Th className="text-right">Asking</Th></tr></thead>
             <tbody>
               {units.map((u) => (
                 <tr key={u.id} className="hover:bg-paper">
@@ -83,7 +84,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
                   <Td className="font-mono text-[12px]">{u.vin_confirmed ? u.serial_no : <Badge tone="amber">VIN needed</Badge>}</Td>
                   <Td className="text-ink-soft">{u.location}</Td>
                   <Td><Badge tone={unitTone[u.status]}>{label(u.status)}</Badge></Td>
-                  <Td className="num">{cost.get(u.id) ? money(cost.get(u.id)!, base) : <span className="text-amber-700">No costs</span>}</Td>
+                  {seeCost && <Td className="num">{cost.get(u.id) ? money(cost.get(u.id)!, base) : <span className="text-amber-700">No costs</span>}</Td>}
                   <Td className="num">{u.list_price != null ? money(u.list_price, u.list_currency) : ""}</Td>
                 </tr>
               ))}

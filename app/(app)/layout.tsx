@@ -44,15 +44,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/inventory/products", label: "Products" },
       ],
     },
-    {
+    ...(ctx.can("ledger.write") ? [{
       title: "Purchases",
       items: [
         { href: "/purchases/bills", label: "Bills and expenses" },
         { href: "/purchases/payments", label: "Supplier payments" },
         { href: "/purchases/payables", label: "Payables" },
       ],
-    },
-    {
+    }] : []),
+    ...(ctx.can("ledger.write") ? [{
       title: "Reports",
       items: [
         ...(ctx.can("ledger.write") ? [{ href: "/reports/profit-per-car", label: "Profit per car" }] : []),
@@ -61,8 +61,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/reports/vat", label: "VAT201" },
         { href: "/accounting/trial-balance", label: "Trial balance" },
       ],
-    },
-    {
+    }] : []),
+    ...(ctx.can("ledger.write") ? [{
       title: "Accounting",
       items: [
         ...(ctx.can("banking.write") ? [{ href: "/banking", label: "Bank reconciliation" }] : []),
@@ -70,7 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/accounting/accounts", label: "Chart of accounts" },
         { href: "/accounting/periods", label: "Periods" },
       ],
-    },
+    }] : []),
     {
       title: "Settings",
       items: [

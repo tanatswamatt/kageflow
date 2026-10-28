@@ -7,7 +7,9 @@ const COLS = ["stock_no", "vin", "make", "model", "variant", "year", "mileage_km
 
 const xml = (v: unknown) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const csv = (v: unknown) => {
-  const s = Array.isArray(v) ? v.join(" | ") : String(v ?? "");
+  let s = Array.isArray(v) ? v.join(" | ") : String(v ?? "");
+  // a cell starting with = + - @ would run as a formula in Excel (security review KF-E03)
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 

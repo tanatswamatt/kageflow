@@ -89,7 +89,9 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
           </Panel>
 
           <Panel title="Landed cost" flush>
-            {costList.length === 0 ? (
+            {!ctx.can("inventory.costs") ? (
+              <p className="px-5 py-4 text-ink-soft">Costs are visible to owners, admins and accountants.</p>
+            ) : costList.length === 0 ? (
               <p className="px-5 py-4 text-ink-soft">No costs yet. Post the purchase price first, then transport, clearing and duty as they come in.</p>
             ) : (
               <Table>
