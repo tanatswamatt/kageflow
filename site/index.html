@@ -6,6 +6,9 @@
 <title>Kageflow | Dealer management software for South African car dealers</title>
 <meta name="description" content="Dealer management software for South African car dealers. Leads from WhatsApp and portals, stock, deals, bank finance applications, commission and VAT201 books in one system, with the real profit on every car.">
 <link rel="canonical" href="https://www.kageflow.co.za/">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96">
+<link rel="icon" href="/favicon-192.png" type="image/png" sizes="192x192">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="alternate" hreflang="en-za" href="https://www.kageflow.co.za/">
@@ -240,6 +243,17 @@ section.band { padding: clamp(64px, 9vw, 120px) 0; }
 .local p { margin-top: 8px; color: var(--ink-soft); font-size: 16px; }
 @media (max-width: 860px) { .local { grid-template-columns: 1fr; gap: 28px; } }
 
+/* photos */
+.step-img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; margin-top: 18px; background: var(--line); }
+@media (max-width: 900px) { .step-img { margin-top: 0; margin-bottom: 14px; max-width: 420px; } .journey li::before { top: 0; } }
+.dept-head { display: grid; grid-template-columns: 1fr 1.05fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+.photo { display: block; width: 100%; height: auto; border-radius: 14px; aspect-ratio: 784 / 336; object-fit: cover; background: var(--line); }
+@media (max-width: 900px) { .dept-head { grid-template-columns: 1fr; } }
+.close { position: relative; overflow: hidden; isolation: isolate; }
+.close-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 30%; z-index: -2; }
+.close::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(22,26,51,.96) 0%, rgba(22,26,51,.88) 45%, rgba(22,26,51,.55) 100%); }
+@media (max-width: 760px) { .close::before { background: rgba(22,26,51,.88); } }
+
 /* questions */
 .faq-wrap { display: grid; grid-template-columns: 1fr 1.6fr; gap: clamp(32px, 6vw, 88px); align-items: start; }
 @media (max-width: 900px) { .faq-wrap { grid-template-columns: 1fr; } }
@@ -335,20 +349,23 @@ footer a:hover { color: #fff; }
         <p>Most dealers run the floor in WhatsApp, stock in a spreadsheet and the books in Pastel, and nobody knows a car's real profit until the accountant asks. In Kageflow every step adds to the same record, so the number is right the moment the deal is signed.</p>
       </div>
       <ol class="journey">
-        <li><h3>Enquiry</h3><p>WhatsApp messages and portal emails turn into leads, linked to the car they asked about. No enquiry gets lost in someone's phone.</p></li>
-        <li><h3>Stock</h3><p>Scan or type the VIN, take the photos, publish the advert. Every rand spent on the car is added to its cost.</p></li>
-        <li><h3>Deal</h3><p>Quote, value the trade-in and invoice. The trade-in goes straight into stock with its own cost.</p></li>
-        <li><h3>Finance</h3><p>Send the application to the banks, track each answer and record the payout and DIC when the money lands.</p></li>
-        <li><h3>Books</h3><p>Sales, VAT and commission post to the ledger as they happen. Your VAT201 and profit and loss are already done.</p></li>
+        <li><img class="step-img" src="/img/enquiry.jpg" width="504" height="336" alt="A hand holding a phone with a customer chat open, a bakkie on the lot behind" loading="lazy"><h3>Enquiry</h3><p>WhatsApp messages and portal emails turn into leads, linked to the car they asked about. No enquiry gets lost in someone's phone.</p></li>
+        <li><img class="step-img" src="/img/stock.jpg" width="504" height="336" alt="A salesman crouching to photograph a silver hatchback on the lot with his phone" loading="lazy"><h3>Stock</h3><p>Scan or type the VIN, take the photos, publish the advert. Every rand spent on the car is added to its cost.</p></li>
+        <li><img class="step-img" src="/img/deal.jpg" width="504" height="336" alt="A dealer handing over keys and shaking hands with a happy buyer next to a bakkie" loading="lazy"><h3>Deal</h3><p>Quote, value the trade-in and invoice. The trade-in goes straight into stock with its own cost.</p></li>
+        <li><img class="step-img" src="/img/finance.jpg" width="504" height="336" alt="A finance manager taking a young couple through their application at his desk" loading="lazy"><h3>Finance</h3><p>Send the application to the banks, track each answer and record the payout and DIC when the money lands.</p></li>
+        <li><img class="step-img" src="/img/books.jpg" width="504" height="336" alt="A dealership owner relaxing with coffee in her office, laptop open, cars outside the window" loading="lazy"><h3>Books</h3><p>Sales, VAT and commission post to the ledger as they happen. Your VAT201 and profit and loss are already done.</p></li>
       </ol>
     </div>
   </section>
 
   <section class="band" id="features">
     <div class="wrap">
-      <div class="intro">
-        <h2>Sales, stock, finance and accounts, working from the same records.</h2>
-        <p>Each person sees the part they work on. The owner sees all of it.</p>
+      <div class="dept-head">
+        <div class="intro">
+          <h2>Sales, stock, finance and accounts, working from the same records.</h2>
+          <p>Each person sees the part they work on. The owner sees all of it.</p>
+        </div>
+        <img class="photo" src="/img/recon.jpg" width="784" height="336" alt="A technician polishing a hatchback in the recon bay" loading="lazy">
       </div>
       <div class="depts">
         <div class="dept">
@@ -470,6 +487,7 @@ footer a:hover { color: #fff; }
   </section>
 
   <section class="close" id="demo">
+    <img class="close-bg" src="/img/lot.jpg" alt="" aria-hidden="true" loading="lazy">
     <div class="wrap">
       <h2>See your own stock in Kageflow.</h2>
       <p>Bring your stock list to the demo and we'll import it while you watch, so you see the profit on your own cars instead of sample data.</p>
