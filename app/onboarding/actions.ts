@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { COMPANY_COOKIE } from "@/lib/context";
 import { cleanError, fail, str } from "@/lib/forms";
+import { notifyAdmin } from "@/lib/notify";
 
 export async function createCompany(fd: FormData) {
   const name = str(fd, "name");
@@ -18,6 +19,14 @@ export async function createCompany(fd: FormData) {
     p_vat_no: str(fd, "vat_no"),
   });
   if (error) fail("/onboarding", cleanError(error.message));
+
+  const { data: auth } = await supabase.auth.getUser();
+  await notifyAdmin(`New dealership on Kageflow: ${name}`, [
+    `${name} just signed up to Kageflow.`,
+    `Signed up by: ${(auth.user?.user_metadata?.full_name as string | undefined) ?? "unknown"} (${auth.user?.email ?? "no email"})`,
+    `VAT number: ${str(fd, "vat_no") ?? "not given"}`,
+    "See all dealerships: https://app.kageflow.co.za/admin",
+  ]);
 
   (await cookies()).set(COMPANY_COOKIE, data as string, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
   redirect("/dashboard");

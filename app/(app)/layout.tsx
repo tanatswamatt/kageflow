@@ -7,6 +7,7 @@ import { switchCompany } from "./actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getContext();
+  const { data: isAdmin } = await ctx.supabase.rpc("is_platform_admin");
 
   const groups: NavGroup[] = [
     { title: "Overview", items: [{ href: "/dashboard", label: "Dashboard" }] },
@@ -82,6 +83,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ...(ctx.can("audit.read") ? [{ href: "/settings/audit", label: "Audit log" }] : []),
       ],
     },
+    ...(isAdmin ? [{ title: "Pretan", items: [{ href: "/admin", label: "All dealerships" }] }] : []),
   ];
 
   return (
