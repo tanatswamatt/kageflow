@@ -39,6 +39,7 @@ export async function signUp(fd: FormData) {
   if (error) {
     const m = error.message.toLowerCase();
     if (m.includes("password")) fail("/login?mode=signup", "Choose a stronger password: at least 12 characters, not one that has appeared in a data breach");
+    if (m.includes("sending") || m.includes("confirmation email") || error.status === 500) fail("/login?mode=signup", "We couldn't send the confirmation email. Try again in a few minutes, or contact info@kageflow.co.za");
     if (m.includes("rate") || m.includes("too many")) fail("/login?mode=signup", "Too many attempts. Wait a few minutes and try again");
     if (!m.includes("already")) fail("/login?mode=signup", "We couldn't create the account. Check the email address and try again");
     // an existing email gets the same answer as a new one, so accounts can't be discovered
