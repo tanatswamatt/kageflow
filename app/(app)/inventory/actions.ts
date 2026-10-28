@@ -206,7 +206,11 @@ export async function removePhoto(fd: FormData) {
   if (!p) fail(back, "Photo not found");
   const { error } = await ctx.supabase.from("vehicle_photos").delete().eq("id", p.id);
   if (error) fail(back, cleanError(error.message));
-  if (p.storage_path) await ctx.supabase.storage.from("vehicle-photos").remove([p.storage_path as string]);
+  if (p.storage_path) {
+    const { error: se } = await ctx.supabase.storage.from("vehicle-photos").remove([p.storage_path as string]);
+    // the record is gone either way; say so if the public file could not be deleted (security review KF-I01)
+    if (se) fail(back, "Photo removed from the car, but the file could not be deleted from storage. Try again or tell Kageflow support.");
+  }
   done(back, "Photo removed");
 }
 

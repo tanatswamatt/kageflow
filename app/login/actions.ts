@@ -27,7 +27,7 @@ export async function signUp(fd: FormData) {
   const email = str(fd, "email");
   const password = str(fd, "password");
   if (!fullName || !email || !password) fail("/login?mode=signup", "Fill in your name, email and password");
-  if (password.length < 8) fail("/login?mode=signup", "Use at least 8 characters for your password");
+  if (password.length < 12) fail("/login?mode=signup", "Use at least 12 characters for your password");
 
   const origin = (await headers()).get("origin") ?? "http://localhost:3000";
   const supabase = await createClient();
@@ -38,7 +38,7 @@ export async function signUp(fd: FormData) {
   });
   if (error) {
     const m = error.message.toLowerCase();
-    if (m.includes("password")) fail("/login?mode=signup", "Choose a stronger password: at least 8 characters, not one that has appeared in a data breach");
+    if (m.includes("password")) fail("/login?mode=signup", "Choose a stronger password: at least 12 characters, not one that has appeared in a data breach");
     if (m.includes("rate") || m.includes("too many")) fail("/login?mode=signup", "Too many attempts. Wait a few minutes and try again");
     if (!m.includes("already")) fail("/login?mode=signup", "We couldn't create the account. Check the email address and try again");
     // an existing email gets the same answer as a new one, so accounts can't be discovered
@@ -62,10 +62,13 @@ export async function requestReset(fd: FormData) {
 export async function setNewPassword(fd: FormData) {
   const password = str(fd, "password");
   const confirm = str(fd, "confirm");
-  if (!password || password.length < 8) fail("/reset-password", "Use at least 8 characters");
+  if (!password || password.length < 12) fail("/reset-password", "Use at least 12 characters");
   if (password !== confirm) fail("/reset-password", "The two passwords don't match");
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) fail("/reset-password", error.message);
+  if (error) {
+    const m = error.message.toLowerCase();
+    fail("/reset-password", m.includes("same") ? "Choose a password you haven't used here before" : m.includes("password") ? "Choose a stronger password: at least 12 characters, not one that has appeared in a data breach" : "The reset link has expired. Request a new one from the sign-in page");
+  }
   redirect(`/reset-password?done=1&ok=${encodeURIComponent("Password changed. You are signed in.")}`);
 }

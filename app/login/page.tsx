@@ -71,8 +71,8 @@ export default async function LoginPage({
             <Field label="Email">
               <Input name="email" type="email" autoComplete="email" required />
             </Field>
-            <Field label="Password" hint={signup ? "At least 8 characters" : undefined}>
-              <Input name="password" type="password" autoComplete={signup ? "new-password" : "current-password"} required minLength={signup ? 8 : undefined} />
+            <Field label="Password" hint={signup ? "At least 12 characters. A short sentence works well." : undefined}>
+              <Input name="password" type="password" autoComplete={signup ? "new-password" : "current-password"} required minLength={signup ? 12 : undefined} />
             </Field>
             {!signup && (
               <Link href="/login?mode=forgot" className="-mt-2 self-end text-[13px] font-medium text-shadow-700 hover:underline">

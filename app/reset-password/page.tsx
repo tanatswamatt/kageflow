@@ -20,11 +20,11 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
           <Link href="/dashboard" className="font-medium text-shadow-700 hover:underline">Go to your dashboard</Link>
         ) : (
         <form action={setNewPassword} className="flex flex-col gap-4">
-          <Field label="New password" hint="At least 8 characters">
-            <Input name="password" type="password" autoComplete="new-password" required minLength={8} />
+          <Field label="New password" hint="At least 12 characters. A short sentence works well.">
+            <Input name="password" type="password" autoComplete="new-password" required minLength={12} />
           </Field>
           <Field label="Repeat new password">
-            <Input name="confirm" type="password" autoComplete="new-password" required minLength={8} />
+            <Input name="confirm" type="password" autoComplete="new-password" required minLength={12} />
           </Field>
           <SubmitButton pendingText="Saving…" className="mt-2 w-full">Save password</SubmitButton>
         </form>
