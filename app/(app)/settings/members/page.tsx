@@ -5,7 +5,7 @@ import { getContext } from "@/lib/context";
 import { getMembers } from "@/lib/members";
 import { date, label } from "@/lib/format";
 import { ROLES } from "@/lib/types";
-import { addMember, changeRole, removeMember } from "../actions";
+import { cancelInvite, changeRole, inviteMember, removeMember, resendInvite } from "../actions";
 import { savePlan } from "../../sales/commissions/actions";
 
 export const metadata: Metadata = { title: "Team" };
@@ -24,6 +24,11 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
   const members = await getMembers();
   const canManage = ctx.can("company.manage");
   const { data: planData } = canManage ? await ctx.supabase.from("commission_plans").select("user_id, basis, rate, min_amount").eq("company_id", ctx.companyId) : { data: [] };
+  const { data: inviteData } = canManage
+    ? await ctx.supabase.from("company_invitations").select("id, email, role, created_at, expires_at").eq("company_id", ctx.companyId).is("accepted_at", null).is("revoked_at", null).order("created_at", { ascending: false })
+    : { data: [] };
+  const invites = (inviteData ?? []) as { id: string; email: string; role: string; created_at: string; expires_at: string }[];
+  const now = Date.now();
   const plans = new Map(((planData ?? []) as { user_id: string; basis: string; rate: number; min_amount: number }[]).map((p) => [p.user_id, p]));
 
   return (
@@ -79,18 +84,41 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
           </dl>
         </Panel>
         {canManage && (
-          <Panel title="Add a team member" className="self-start">
-            <p className="mb-4 text-[13px] text-ink-soft">They need a Kageflow account first. Ask them to sign up, then add their email here.</p>
-            <form action={addMember} className="flex flex-col gap-3">
-              <Field label="Email"><Input name="email" type="email" required /></Field>
-              <Field label="Role">
-                <Select name="role" defaultValue="sales">
-                  {ROLES.filter((r) => r !== "owner" || ctx.role === "owner").map((r) => <option key={r} value={r}>{label(r)}</option>)}
-                </Select>
-              </Field>
-              <div><SubmitButton size="sm">Add member</SubmitButton></div>
-            </form>
-          </Panel>
+          <div className="flex flex-col gap-6 self-start">
+            <Panel title="Invite a team member">
+              <p className="mb-4 text-[13px] text-ink-soft">We&apos;ll email them a link. They set a password and land straight in {ctx.company.name} with the role you choose.</p>
+              <form action={inviteMember} className="flex flex-col gap-3">
+                <Field label="Email"><Input name="email" type="email" required autoComplete="off" /></Field>
+                <Field label="Role">
+                  <Select name="role" defaultValue="sales">
+                    {ROLES.filter((r) => r !== "owner" || ctx.role === "owner").map((r) => <option key={r} value={r}>{label(r)}</option>)}
+                  </Select>
+                </Field>
+                <div><SubmitButton size="sm" pendingText="Sending…">Send invitation</SubmitButton></div>
+              </form>
+            </Panel>
+            {invites.length > 0 && (
+              <Panel title="Waiting to join" flush>
+                <ul className="divide-y divide-line">
+                  {invites.map((i) => {
+                    const expired = new Date(i.expires_at).getTime() < now;
+                    return (
+                      <li key={i.id} className="flex flex-col gap-2 px-4 py-3 text-[13px]">
+                        <div>
+                          <div className="font-medium break-all">{i.email}</div>
+                          <div className="text-ink-faint">{label(i.role)} · {expired ? <span className="text-amber-700">expired</span> : `sent ${date(i.created_at)}`}</div>
+                        </div>
+                        <div className="flex gap-2">
+                          <form action={resendInvite}><input type="hidden" name="id" value={i.id} /><SubmitButton size="sm" tone="secondary" pendingText="Sending…">Send again</SubmitButton></form>
+                          <form action={cancelInvite}><input type="hidden" name="id" value={i.id} /><SubmitButton size="sm" tone="quiet" confirm={`Cancel the invitation for ${i.email}?`} pendingText="…">Cancel</SubmitButton></form>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Panel>
+            )}
+          </div>
         )}
       </div>
       {canManage && (
