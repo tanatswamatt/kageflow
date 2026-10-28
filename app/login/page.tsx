@@ -20,7 +20,7 @@ export default async function LoginPage({
     <main className="grid min-h-dvh lg:grid-cols-[1fr_minmax(420px,520px)]">
       <section className="relative hidden overflow-hidden bg-shadow-900 p-12 text-shadow-100 lg:flex lg:flex-col lg:justify-between">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/login-bg.jpg" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        <img src="/login-bg.jpg" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-shadow-900/95 via-shadow-900/80 to-shadow-900/40" aria-hidden="true" />
         <div className="relative"><Logo inverted /></div>
         <div className="relative max-w-lg">
