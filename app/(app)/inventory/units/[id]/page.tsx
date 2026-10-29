@@ -139,6 +139,12 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
                 </Field>
                 <Field label="Date"><Input name="cost_date" type="date" defaultValue={today()} /></Field>
                 <Field label="Supplier invoice or reference"><Input name="reference" /></Field>
+                <Field label="Supplier" hint="Who you owe, when it isn't paid yet">
+                  <Select name="supplier_account_id" defaultValue={u.supplier_account_id ?? ""}>
+                    <option value="">None</option>
+                    {((suppliers ?? []) as { id: string; name: string }[]).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </Select>
+                </Field>
                 <Field label="Description" className="sm:col-span-2"><Input name="description" placeholder="Auction purchase, Durban to Nairobi road freight" /></Field>
                 <div className="flex items-end"><SubmitButton size="sm">Post cost</SubmitButton></div>
               </form>

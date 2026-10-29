@@ -35,10 +35,11 @@ export function QuickAdd({
   const [error, setError] = useState<string | null>(null);
   const [vin, setVin] = useState(initialVin);
   const [info, setInfo] = useState<VinInfo | null>(null);
-  const [f, setF] = useState({ make: "", model: "", variant: "", year: "", mileage: "", colour: "", transmission: "", fuel: "", body: "", location: "", price: "", paidFrom: payFrom[0]?.id ?? "", supplierId: "", privateSeller: true });
+  const [f, setF] = useState({ make: "", model: "", variant: "", year: "", mileage: "", colour: "", transmission: "", fuel: "", body: "", location: "", price: "", paidFrom: payFrom[0]?.id ?? "", supplierId: "", newSupplier: "", privateSeller: true });
   const [unit, setUnit] = useState<{ id: string; stockNo: string } | null>(null);
   const [photos, setPhotos] = useState(0);
   const set = (k: keyof typeof f, v: string | boolean) => setF((x) => ({ ...x, [k]: v }));
+  const owing = payFrom.find((o) => o.id === f.paidFrom)?.label.startsWith("Owe") ?? false;
 
   const lookUp = (raw: string) => {
     const v = cleanVin(raw);
@@ -110,7 +111,9 @@ export function QuickAdd({
             <div className="grid grid-cols-2 gap-3 rounded-[var(--radius-control)] bg-paper p-3">
               <label className={`${lbl} col-span-2`}>What you paid ({currency === "ZAR" ? "R" : currency}, optional)<input className={big} inputMode="decimal" value={f.price} onChange={(e) => set("price", e.target.value)} /></label>
               <label className={lbl}>Paid from<select className={big} value={f.paidFrom} onChange={(e) => set("paidFrom", e.target.value)}>{payFrom.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}</select></label>
-              <label className={lbl}>Bought from<select className={big} value={f.supplierId} onChange={(e) => set("supplierId", e.target.value)}><option value="">Not recorded</option>{suppliers.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}</select></label>
+              <label className={lbl}>Bought from<select className={big} value={f.supplierId} onChange={(e) => set("supplierId", e.target.value)}><option value="">Not recorded</option><option value="__new">+ Someone new</option>{suppliers.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}</select></label>
+              {f.supplierId === "__new" && <label className={`${lbl} col-span-2`}>Seller&apos;s name (dealer or person)<input className={big} value={f.newSupplier} onChange={(e) => set("newSupplier", e.target.value)} placeholder="Joburg Auto Traders" /></label>}
+              {owing && f.price.trim() !== "" && !f.supplierId && <p className="col-span-2 text-[13px] text-amber-700">Choose who you bought it from, so it shows in Payables as money you owe them.</p>}
               {vatVendor && <label className="col-span-2 flex items-center gap-2 text-[14px]"><input type="checkbox" checked={f.privateSeller} onChange={(e) => set("privateSeller", e.target.checked)} className="size-5 accent-jade-700" /> Bought from a private seller (claim notional VAT)</label>}
             </div>
           )}

@@ -61,7 +61,7 @@ export type QuickAddResult = { id?: string; stockNo?: string; error?: string };
 export async function quickAddVehicle(input: {
   vin: string; make: string; model: string; variant: string; year: string; mileage: string; colour: string;
   transmission: string; fuel: string; body: string; location: string;
-  price: string; paidFrom: string; supplierId: string; privateSeller: boolean;
+  price: string; paidFrom: string; supplierId: string; privateSeller: boolean; newSupplier?: string;
 }): Promise<QuickAddResult> {
   const ctx = await getContext();
   if (!ctx.can("inventory.write")) return { error: "Your role can't add stock" };
@@ -75,6 +75,14 @@ export async function quickAddVehicle(input: {
   };
   const year = n(input.year);
   const km = n(input.mileage);
+  // a seller who isn't in Kageflow yet: add them as a supplier so the car's cost can be owed to them
+  if (input.supplierId === "__new") {
+    const name = (input.newSupplier ?? "").trim();
+    if (!name) return { error: "Type the seller's name, or choose Not recorded" };
+    const { data: sup, error: se } = await ctx.supabase.from("crm_accounts").insert({ company_id: ctx.companyId, name, kind: "supplier", owner_id: ctx.user.id }).select("id").single();
+    if (se) return { error: cleanError(se.message) };
+    input = { ...input, supplierId: sup.id as string };
+  }
   const { data: product } = await ctx.supabase.from("products").select("id").eq("company_id", ctx.companyId).eq("tracking", "serial").order("created_at").limit(1).maybeSingle();
   const { data, error } = await ctx.supabase.from("inventory_units").insert({
     company_id: ctx.companyId, product_id: product?.id ?? null, serial_no: vin,
