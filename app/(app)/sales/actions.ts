@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { getContext } from "@/lib/context";
 import { cleanError, done, fail, num, str } from "@/lib/forms";
 import { DOC_LABEL } from "@/lib/sales";
+import { deliverEmail, documentEmail } from "@/lib/email";
+import { date, money } from "@/lib/format";
 import type { DocType, PaymentMethod } from "@/lib/types";
 
 async function sales(back: string) {
@@ -192,32 +194,22 @@ export async function emailDoc(fd: FormData) {
   const id = str(fd, "id")!;
   const back = `/sales/doc/${id}`;
   const ctx = await sales(back);
-  const to = str(fd, "to");
+  const to = str(fd, "to")?.trim();
   if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) fail(back, "Enter a valid email address");
-  const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
-  if (!key || !from) fail(back, "Email sending isn't set up yet. Copy the share link instead, or add RESEND_API_KEY and EMAIL_FROM.");
 
-  const { data } = await ctx.supabase.from("sales_docs").select("doc_type, number, share_token, total, currency, due_date").eq("id", id).single();
+  const { data } = await ctx.supabase.from("sales_docs").select("doc_type, number, share_token, total, currency, due_date").eq("id", id).eq("company_id", ctx.companyId).single();
   if (!data?.number) fail(back, "Send the document first so it has a number");
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? (await headers()).get("origin") ?? "";
-  const link = `${origin}/d/${data.share_token}`;
+  const h = await headers();
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || h.get("origin") || `https://${h.get("x-forwarded-host") ?? h.get("host") ?? "app.kageflow.co.za"}`;
   const label = DOC_LABEL[data.doc_type as DocType].one;
-  const message = str(fd, "message");
-  const text = [
-    message ?? `Please find ${label.toLowerCase()} ${data.number} from ${ctx.company.name}.`,
-    "",
-    `View and download: ${link}`,
-    "",
-    ctx.company.name,
-  ].join("\n");
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [to], reply_to: ctx.company.email ?? undefined, subject: `${label} ${data.number} from ${ctx.company.name}`, text }),
+  const mail = documentEmail({
+    company: ctx.company.name, label, number: data.number, message: str(fd, "message"),
+    link: `${origin.replace(/\/$/, "")}/d/${data.share_token}`,
+    total: money(data.total, data.currency), due: data.doc_type === "invoice" && data.due_date ? date(data.due_date) : null,
+    companyEmail: ctx.company.email, companyPhone: ctx.company.phone,
   });
-  if (!res.ok) fail(back, `The email service refused the message (${res.status}). Check the sender domain is verified.`);
+  const sent = await deliverEmail({ to, ...mail, replyTo: ctx.company.email ?? ctx.user.email ?? null, fromName: ctx.company.name });
+  if (!sent.ok) fail(back, `${sent.error}. Copy the share link and send it yourself for now.`);
   if (data.doc_type === "quote") {
     await ctx.supabase.from("sales_docs").update({ status: "sent" }).eq("id", id).eq("status", "draft");
   }
