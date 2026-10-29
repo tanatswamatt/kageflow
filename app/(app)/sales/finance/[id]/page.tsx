@@ -19,6 +19,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
   const sp = await searchParams;
   const ctx = await getContext();
   const money = moneyFor(ctx.company.base_currency);
+  const cur = ctx.company.base_currency === "ZAR" ? "R" : ctx.company.base_currency;
   if (!ctx.can("sales.write")) notFound();
   const { data } = await ctx.supabase.from("finance_applications").select("*, crm_accounts(id, name), sales_docs(id, number, total), inventory_units(id, stock_no, make, model, year, serial_no)").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
@@ -76,7 +77,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                 <Field label="Monthly expenses"><Input name="expenses" inputMode="decimal" defaultValue={n(app.expenses)} /></Field>
               </div>
             </Panel>
-            <Panel title="The deal (R)">
+            <Panel title={`The deal (${cur})`}>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Field label="Price incl. VAT"><Input name="purchase_price" inputMode="decimal" defaultValue={n(app.purchase_price)} /></Field>
                 <Field label="Extras (warranty, accessories)"><Input name="extras" inputMode="decimal" defaultValue={n(app.extras)} /></Field>
@@ -130,7 +131,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                         <Field label="Rate %"><Input name="rate" inputMode="decimal" defaultValue={n(s.rate)} /></Field>
                         <Field label="Term"><Input name="term_months" inputMode="numeric" defaultValue={n(s.term_months ?? app.term_months)} /></Field>
                         <Field label="Instalment"><Input name="instalment" inputMode="decimal" defaultValue={n(s.instalment)} /></Field>
-                        <Field label="Balloon (R)"><Input name="balloon_amount" inputMode="decimal" defaultValue={n(s.balloon_amount)} /></Field>
+                        <Field label={`Balloon (${cur})`}><Input name="balloon_amount" inputMode="decimal" defaultValue={n(s.balloon_amount)} /></Field>
                         <Field label="Dealer commission (DIC, R)"><Input name="dic_amount" inputMode="decimal" defaultValue={n(s.dic_amount)} /></Field>
                         <Field label="Bank ref"><Input name="reference" defaultValue={s.reference ?? ""} /></Field>
                         <Field label="Conditions" className="col-span-2"><Input name="conditions" defaultValue={s.conditions ?? ""} placeholder="e.g. proof of income, 10% deposit" /></Field>
@@ -143,7 +144,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                       <summary className="cursor-pointer text-[13px] font-medium text-jade-700">Record the payout</summary>
                       <form action={recordPayout} className="mt-2 grid grid-cols-2 gap-2">
                         <input type="hidden" name="id" value={s.id} /><input type="hidden" name="application_id" value={app.id} />
-                        <Field label="Amount paid (R)"><Input name="amount" inputMode="decimal" defaultValue={n(s.approved_amount ?? toFinance)} required /></Field>
+                        <Field label={`Amount paid (${cur})`}><Input name="amount" inputMode="decimal" defaultValue={n(s.approved_amount ?? toFinance)} required /></Field>
                         <Field label="Date"><Input name="date" type="date" defaultValue={today()} /></Field>
                         <Field label="Into" className="col-span-2"><Select name="bank_account_id">{banks.map((b) => <option key={b.id} value={b.id}>{b.code} {b.name}</option>)}</Select></Field>
                         <div className="col-span-2"><SubmitButton size="sm">Record payout</SubmitButton></div>
@@ -166,7 +167,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
           </Panel>
 
           <Panel title="Instalment estimate">
-            <FinanceCalculator amount={toFinance} rate={Number(app.est_rate ?? 12.75)} term={app.term_months ?? 72} balloonPct={Number(app.balloon_pct ?? 0)} />
+            <FinanceCalculator amount={toFinance} rate={Number(app.est_rate ?? 12.75)} term={app.term_months ?? 72} balloonPct={Number(app.balloon_pct ?? 0)} currency={ctx.company.base_currency} />
           </Panel>
 
           <Panel title="Linked">

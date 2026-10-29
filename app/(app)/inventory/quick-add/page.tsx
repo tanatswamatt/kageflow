@@ -32,6 +32,7 @@ export default async function QuickAddPage({ searchParams }: { searchParams: Pro
         suppliers={((sup ?? []) as { id: string; name: string }[]).map((s) => ({ id: s.id, label: s.name }))}
         vatVendor={!!ctx.company.vat_no?.trim() && ctx.rules.notionalInputTax}
         canCost={ctx.can("inventory.costs")}
+        currency={ctx.company.base_currency}
         decode={decodeVin}
         add={quickAddVehicle}
         registerPhotos={registerPhotos}

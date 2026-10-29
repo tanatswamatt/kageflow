@@ -37,7 +37,7 @@ export default async function NewTradeInPage({ searchParams }: { searchParams: P
               </Select>
             </Field>
           </div>
-          <TradeInFields vatVendor={!!ctx.company.vat_no?.trim()} />
+          <TradeInFields vatVendor={!!ctx.company.vat_no?.trim()} currency={ctx.company.base_currency} />
           <div><SubmitButton>Save trade-in offer</SubmitButton></div>
         </form>
       </Panel>

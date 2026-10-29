@@ -51,7 +51,7 @@ export default async function TradeInPage({ params, searchParams }: { params: Pr
                   {!draft && t.order_id && <option value={t.order_id}>Linked order</option>}
                 </Select>
               </Field>
-              <TradeInFields t={t} vatVendor={vatVendor} />
+              <TradeInFields t={t} vatVendor={vatVendor} currency={ctx.company.base_currency} />
               {draft && canWrite && <div><SubmitButton tone="secondary">Save changes</SubmitButton></div>}
             </fieldset>
           </form>

@@ -3,7 +3,8 @@ import type { TradeIn } from "@/lib/finance";
 
 const n = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(Number(v)));
 
-export function TradeInFields({ t, vatVendor }: { t?: Partial<TradeIn>; vatVendor: boolean }) {
+export function TradeInFields({ t, vatVendor, currency = "ZAR" }: { t?: Partial<TradeIn>; vatVendor: boolean; currency?: string }) {
+  const cur = currency === "ZAR" ? "R" : currency;
   return (
     <div className="flex flex-col gap-5">
       <div className="grid gap-3 sm:grid-cols-3">
@@ -18,9 +19,9 @@ export function TradeInFields({ t, vatVendor }: { t?: Partial<TradeIn>; vatVendo
         <Field label="Condition notes" className="sm:col-span-3"><Textarea name="condition_notes" rows={2} defaultValue={t?.condition_notes ?? ""} placeholder="Scratches on bumper, needs tyres, full service history" /></Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Trade value (your estimate, R)" hint="TransUnion or Lightstone trade value"><Input name="valuation" inputMode="decimal" defaultValue={n(t?.valuation)} /></Field>
-        <Field label="Allowance agreed (R, incl. VAT)" hint="What the customer gets for it"><Input name="allowance" inputMode="decimal" defaultValue={n(t?.allowance)} /></Field>
-        <Field label="Settlement owed to their bank (R)"><Input name="settlement_amount" inputMode="decimal" defaultValue={n(t?.settlement_amount ?? 0)} /></Field>
+        <Field label={`Trade value (your estimate, ${cur})`} hint="TransUnion or Lightstone trade value"><Input name="valuation" inputMode="decimal" defaultValue={n(t?.valuation)} /></Field>
+        <Field label={`Allowance agreed (${cur}, incl. VAT)`} hint="What the customer gets for it"><Input name="allowance" inputMode="decimal" defaultValue={n(t?.allowance)} /></Field>
+        <Field label={`Settlement owed to their bank (${cur})`}><Input name="settlement_amount" inputMode="decimal" defaultValue={n(t?.settlement_amount ?? 0)} /></Field>
         <Field label="Their finance house"><Input name="settlement_bank" defaultValue={t?.settlement_bank ?? ""} placeholder="WesBank" /></Field>
         <Field label="Their account number"><Input name="settlement_ref" defaultValue={t?.settlement_ref ?? ""} /></Field>
         {vatVendor && (
