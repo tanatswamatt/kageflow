@@ -31,6 +31,7 @@ export const docTone: Record<DocStatus, BadgeTone> = {
 
 export const unitTone: Record<UnitStatus, BadgeTone> = {
   on_order: "neutral",
+  listed: "amber",
   in_transit: "amber",
   in_stock: "jade",
   reserved: "shadow",

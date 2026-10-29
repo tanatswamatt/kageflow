@@ -13,6 +13,9 @@ import { unitTone } from "@/lib/badges";
 import { UNIT_COST_KINDS, type Unit, type UnitCost, type VehiclePhoto } from "@/lib/types";
 import { askingNet, netProfit, type VehicleProfit } from "@/lib/profit";
 import { addCost, makeMainPhoto, registerPhotos, removePhoto, reverseCost, saveAdvert, updateUnit } from "../../actions";
+import { saveRegDoc } from "../../listing-actions";
+import { ShareCarPanel, SupplierListingPanel } from "@/components/inventory/listing-panels";
+import { DocUploader } from "@/components/inventory/doc-uploader";
 
 const TRANSMISSIONS = ["Manual", "Automatic"];
 const FUELS = ["Petrol", "Diesel", "Hybrid", "Electric"];
@@ -49,21 +52,38 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
   const live = costList.filter((c) => !c.reversal_journal_id);
   const landed = live.reduce((s, c) => s + Number(c.amount), 0);
   const final = u.status === "sold" || u.status === "written_off";
-  const canCost = ctx.can("inventory.costs") && !final;
   const accounts = (payFrom ?? []) as { id: string; code: string; name: string; system_key: string | null }[];
+  const listed = u.status === "listed";
+  const canCost = ctx.can("inventory.costs") && !final && !listed;
+  const shareable = ["in_stock", "in_transit", "on_order"].includes(u.status) && canAdvert;
+  const [{ data: supData }, { data: shareData }, docUrl] = await Promise.all([
+    u.supplier_account_id ? ctx.supabase.from("crm_accounts").select("name, vat_no").eq("id", u.supplier_account_id).maybeSingle() : Promise.resolve({ data: null }),
+    ctx.supabase.from("stock_shares").select("id, status, price, currency, to_name, created_at").eq("unit_id", id).order("created_at", { ascending: false }),
+    u.reg_doc_path ? ctx.supabase.storage.from("vehicle-documents").createSignedUrl(u.reg_doc_path, 600).then((r) => r.data?.signedUrl ?? null) : Promise.resolve(null),
+  ]);
+  const supplier = supData as { name: string; vat_no: string | null } | null;
+  const shares = (shareData ?? []) as { id: string; status: string; price: number; currency: string; to_name: string | null; created_at: string }[];
+  const buyFrom = [
+    ...accounts.filter((a) => a.system_key === "payables").map((a) => ({ id: a.id, label: "Owe the supplier (bill, pay later)" })),
+    ...accounts.filter((a) => a.system_key === "bank").map((a) => ({ id: a.id, label: `Paid from ${a.name}` })),
+  ];
   const docRows = ((docs ?? []) as unknown as { sales_docs: { id: string; doc_type: string; number: string | null; status: string } | null }[]).map((d) => d.sales_docs).filter(Boolean);
 
   return (
     <>
       <PageHeader
         title={[u.make, u.model, u.year].filter(Boolean).join(" ") || u.serial_no}
-        description={u.vin_confirmed ? <span className="font-mono text-[13px]">VIN {u.serial_no}</span> : <span className="font-medium text-amber-700">VIN not added yet: add it under Vehicle details before invoicing</span>}
+        description={u.vin_confirmed ? <span className="font-mono text-[13px]">VIN {u.serial_no}</span> : listed ? <span className="font-medium text-amber-700">{u.serial_no.startsWith("TBC-") ? "VIN to follow at inspection" : `VIN ${u.serial_no} from the document, not yet checked on the car`}</span> : <span className="font-medium text-amber-700">VIN not added yet: add it under Vehicle details before invoicing</span>}
         back={{ href: "/inventory/units", label: "Vehicles" }}
         actions={<Badge tone={unitTone[u.status]}>{label(u.status)}</Badge>}
       />
       <Notice params={sp} />
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex min-w-0 flex-col gap-6">
+          {listed && (
+            <SupplierListingPanel unit={u} supplier={supplier} canBuy={ctx.can("inventory.costs")} payFrom={buyFrom}
+              vatVendor={!!ctx.company.vat_no?.trim()} vatRate={ctx.rules.vatRate} />
+          )}
           <Panel title={<span className="flex items-center gap-2">Advert {u.is_published ? <Badge tone="jade">Live on feeds</Badge> : <Badge>Not published</Badge>}</span>}>
             <form action={saveAdvert} className="flex flex-col gap-4">
               <input type="hidden" name="id" value={id} />
@@ -230,6 +250,20 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
             />
             {!canCost && !final && <p className="mt-3 text-[13px] text-ink-faint">Only owners, admins and accountants can post costs.</p>}
           </Panel>
+          <Panel title="Registration document">
+            {docUrl ? (
+              <p className="mb-3 text-[13px]"><a href={docUrl} target="_blank" rel="noreferrer" className="font-medium text-shadow-700 hover:underline">Open the registration document</a> <span className="text-ink-faint">(private to your team)</span></p>
+            ) : (
+              <p className="mb-3 text-[13px] text-ink-soft">None yet. A photo or PDF of the registration certificate; it shows the VIN to check at inspection.</p>
+            )}
+            {canAdvert && !final && <DocUploader companyId={ctx.companyId} unitId={id} hasDoc={!!u.reg_doc_path} save={saveRegDoc} />}
+          </Panel>
+          {shareable && <ShareCarPanel unitId={id} shares={shares} defaultPrice={u.list_price != null ? Number(u.list_price) : null} currency={base} />}
+          {!shareable && shares.length > 0 && (
+            <Panel title="Shared with dealers">
+              <ul className="flex flex-col gap-1.5 text-[13px]">{shares.map((s) => <li key={s.id}>{s.to_name ?? "Dealer"}: {s.status === "bought" ? "they bought it" : s.status}</li>)}</ul>
+            </Panel>
+          )}
           {docRows.length > 0 && (
             <Panel title="On documents">
               <ul className="flex flex-col gap-1.5">

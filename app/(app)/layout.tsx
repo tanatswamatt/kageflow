@@ -7,10 +7,13 @@ import { switchCompany } from "./actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getContext();
-  const [{ data: isAdmin }, { count: incoming }] = await Promise.all([
+  const [{ data: isAdmin }, { count: incoming }, { count: sharedIn }] = await Promise.all([
     ctx.supabase.rpc("is_platform_admin"),
     ctx.can("inventory.write")
       ? ctx.supabase.from("vehicle_transfers").select("id", { count: "exact", head: true }).eq("to_company_id", ctx.companyId).eq("status", "pending")
+      : Promise.resolve({ count: 0 }),
+    ctx.can("inventory.write")
+      ? ctx.supabase.from("stock_shares").select("id", { count: "exact", head: true }).eq("to_company_id", ctx.companyId).eq("status", "offered")
       : Promise.resolve({ count: 0 }),
   ]);
 
@@ -45,7 +48,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       title: "Stock",
       items: [
         { href: "/inventory/units", label: "Vehicles" },
-        ...(ctx.can("inventory.write") ? [{ href: "/inventory/incoming", label: incoming ? `Incoming cars (${incoming})` : "Incoming cars" }] : []),
+        ...(ctx.can("inventory.write") ? [
+          { href: "/inventory/units?v=listed", label: "Supplier listings" },
+          { href: "/inventory/list-supplier-car", label: "List a supplier's car" },
+          { href: "/inventory/shared", label: sharedIn ? `Shared with you (${sharedIn})` : "Shared with you" },
+          { href: "/inventory/incoming", label: incoming ? `Incoming cars (${incoming})` : "Incoming cars" },
+        ] : []),
         ...(ctx.can("inventory.write") ? [{ href: "/inventory/quick-add", label: "Add a car" }, { href: "/inventory/stock-check", label: "Stock check" }] : []),
         { href: "/inventory/products", label: "Products" },
       ],

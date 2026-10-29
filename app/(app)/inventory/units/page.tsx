@@ -9,8 +9,9 @@ import type { Unit } from "@/lib/types";
 export const metadata: Metadata = { title: "Vehicles" };
 
 const VIEWS = [
-  { key: "available", label: "Available", statuses: ["on_order", "in_transit", "in_stock", "reserved"] },
+  { key: "available", label: "Available", statuses: ["on_order", "listed", "in_transit", "in_stock", "reserved"] },
   { key: "in_stock", label: "In stock", statuses: ["in_stock"] },
+  { key: "listed", label: "Supplier listings", statuses: ["listed"] },
   { key: "in_transit", label: "In transit", statuses: ["in_transit", "on_order"] },
   { key: "reserved", label: "Reserved", statuses: ["reserved"] },
   { key: "sold", label: "Sold", statuses: ["sold"] },
@@ -42,6 +43,7 @@ export default async function UnitsPage({ searchParams }: { searchParams: Promis
         actions={ctx.can("inventory.write") && (
           <>
             <ButtonLink href="/inventory/stock-check">Stock check</ButtonLink>
+            <ButtonLink href="/inventory/list-supplier-car">List a supplier&apos;s car</ButtonLink>
             <ButtonLink href="/inventory/units/new">Full form</ButtonLink>
             <ButtonLink href="/inventory/quick-add" tone="primary">Add a car</ButtonLink>
           </>

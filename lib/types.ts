@@ -61,6 +61,8 @@ export type CrmAccount = {
   notes: string | null;
   billing_address: string | null;
   payment_days: number | null;
+  approved_supplier?: boolean;
+  kageflow_company_id?: string | null;
   created_at: string;
 };
 
@@ -189,12 +191,12 @@ export type Profile = { id: string; full_name: string | null; email: string | nu
 // ---------- sales, inventory, integrations ----------
 export type DocType = "quote" | "order" | "invoice" | "credit_note";
 export type DocStatus = "draft" | "sent" | "accepted" | "declined" | "open" | "fulfilled" | "cancelled" | "issued";
-export type UnitStatus = "on_order" | "in_transit" | "in_stock" | "reserved" | "sold" | "written_off";
+export type UnitStatus = "on_order" | "listed" | "in_transit" | "in_stock" | "reserved" | "sold" | "written_off";
 export type UnitCostKind = "purchase" | "transport" | "clearing" | "duty" | "repairs" | "other";
 export type PaymentMethod = "eft" | "cash" | "card" | "other" | "trade_in" | "bank_payout";
 
 export const CURRENCIES = ["ZAR", "USD", "EUR", "GBP", "KES", "BWP", "ZMW", "MZN", "NAD", "ZWG"];
-export const UNIT_STATUSES: UnitStatus[] = ["on_order", "in_transit", "in_stock", "reserved", "sold", "written_off"];
+export const UNIT_STATUSES: UnitStatus[] = ["on_order", "listed", "in_transit", "in_stock", "reserved", "sold", "written_off"];
 export const MANUAL_UNIT_STATUSES: UnitStatus[] = ["on_order", "in_transit", "in_stock"];
 export const UNIT_COST_KINDS: UnitCostKind[] = ["purchase", "transport", "clearing", "duty", "repairs", "other"];
 export const PAYMENT_METHODS: PaymentMethod[] = ["eft", "cash", "card", "other"];
@@ -270,6 +272,12 @@ export type Unit = {
   advert_title: string | null;
   advert_description: string | null;
   advert_price: number | null;
+  supplier_price: number | null;
+  supplier_currency: string | null;
+  registration_no: string | null;
+  reg_doc_path: string | null;
+  inspected_at: string | null;
+  source_share_id: string | null;
   features: string[];
   transmission: string | null;
   fuel_type: string | null;

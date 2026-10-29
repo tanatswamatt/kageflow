@@ -10,7 +10,7 @@ type UnitRow = { id: string; product_id: string | null; serial_no: string; vin_c
 export async function loadCatalog(ctx: AppContext, opts: { creditFor?: string | null } = {}): Promise<CatalogItem[]> {
   const unitsQuery = opts.creditFor
     ? ctx.supabase.from("inventory_units").select("*").eq("company_id", ctx.companyId).eq("sold_doc_id", opts.creditFor)
-    : ctx.supabase.from("inventory_units").select("*").eq("company_id", ctx.companyId).in("status", ["in_stock", "in_transit", "on_order", "reserved"]).order("created_at", { ascending: false }).limit(1000);
+    : ctx.supabase.from("inventory_units").select("*").eq("company_id", ctx.companyId).in("status", ["in_stock", "in_transit", "on_order", "reserved", "listed"]).order("created_at", { ascending: false }).limit(1000);
   const [{ data: products }, { data: units }] = await Promise.all([
     ctx.supabase.from("products").select("id, sku, name, description, tracking, sale_price, currency, tax_rate_id, image_url, qty_on_hand").eq("company_id", ctx.companyId).eq("is_active", true).order("name"),
     unitsQuery,

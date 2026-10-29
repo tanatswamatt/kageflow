@@ -14,7 +14,7 @@ export default async function NewFinancePage({ searchParams }: { searchParams: P
   const [{ data: orders }, { data: accounts }, { data: units }] = await Promise.all([
     ctx.supabase.from("sales_docs").select("id, number, total, crm_accounts(name)").eq("company_id", ctx.companyId).eq("doc_type", "order").eq("status", "open").order("created_at", { ascending: false }).limit(200),
     ctx.supabase.from("crm_accounts").select("id, name").eq("company_id", ctx.companyId).in("kind", ["customer", "prospect"]).order("name").limit(2000),
-    ctx.supabase.from("inventory_units").select("id, stock_no, make, model, year").eq("company_id", ctx.companyId).in("status", ["in_stock", "reserved", "in_transit"]).order("created_at", { ascending: false }).limit(1000),
+    ctx.supabase.from("inventory_units").select("id, stock_no, make, model, year").eq("company_id", ctx.companyId).in("status", ["in_stock", "reserved", "in_transit", "listed"]).order("created_at", { ascending: false }).limit(1000),
   ]);
   return (
     <>

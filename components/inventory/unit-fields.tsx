@@ -3,7 +3,7 @@ import { label } from "@/lib/format";
 import { CURRENCIES, MANUAL_UNIT_STATUSES, type Unit } from "@/lib/types";
 
 export function UnitFields({ unit, products, suppliers, base }: { unit?: Unit; products: { id: string; name: string }[]; suppliers: { id: string; name: string }[]; base: string }) {
-  const locked = unit && (unit.status === "sold" || unit.status === "reserved" || unit.status === "written_off");
+  const locked = unit && (unit.status === "sold" || unit.status === "reserved" || unit.status === "written_off" || unit.status === "listed");
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <Field label="VIN or serial number" hint={unit && !unit.vin_confirmed ? "Imported from the website without a VIN. Add it before invoicing." : undefined} className="sm:col-span-2">

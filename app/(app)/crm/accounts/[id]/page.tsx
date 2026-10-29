@@ -17,6 +17,7 @@ import { DOC_LABEL, docStatusLabel } from "@/lib/sales";
 import type { Activity, Contact, CrmAccount, Deal, SalesDoc, Stage } from "@/lib/types";
 import { createContact, deleteAccount, updateAccount } from "../../actions";
 import { linkDealer } from "../../../inventory/transfer-actions";
+import { setApprovedSupplier } from "../../../inventory/listing-actions";
 
 export const metadata: Metadata = { title: "Account" };
 
@@ -150,6 +151,22 @@ export default async function AccountPage({ params, searchParams }: { params: Pr
               ]}
             />
             {account.notes && <p className="mt-4 whitespace-pre-line border-t border-line pt-3 text-ink-soft">{account.notes}</p>}
+          </Panel>
+
+          <Panel title="Supplier" action={account.approved_supplier ? <Badge tone="jade">Approved</Badge> : undefined}>
+            <p className="text-[13px] text-ink-soft">
+              {account.approved_supplier
+                ? "You can list cars from this supplier's floor plan and advertise them as your stock."
+                : "Approve this account to list cars from its floor plan. Only approve dealers you trust."}
+            </p>
+            {ctx.can("company.manage") && (
+              <form action={setApprovedSupplier} className="mt-3 flex items-center gap-3">
+                <input type="hidden" name="account_id" value={id} />
+                <input type="hidden" name="approved" value={account.approved_supplier ? "" : "on"} />
+                <SubmitButton size="sm" tone="secondary">{account.approved_supplier ? "Remove approval" : "Approve this supplier"}</SubmitButton>
+                {account.approved_supplier && <Link href={`/inventory/list-supplier-car?supplier=${id}`} className="text-[13px] text-shadow-700 hover:underline">List one of their cars</Link>}
+              </form>
+            )}
           </Panel>
 
           <Panel title="On Kageflow">

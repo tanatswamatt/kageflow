@@ -50,7 +50,9 @@ export async function updateUnit(fd: FormData) {
   const { serial_no: serialIn, ...rest } = parsed;
   const f = serialIn ? { ...rest, serial_no: serialIn } : { ...rest, serial_no: "" };
   const status = str(fd, "status") as UnitStatus | null;
-  const confirmed = !f.serial_no.startsWith("TBC-") && f.serial_no.length >= 11;
+  // a supplier listing's VIN is only confirmed by inspecting the car
+  const { data: cur } = await ctx.supabase.from("inventory_units").select("status").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
+  const confirmed = !f.serial_no.startsWith("TBC-") && f.serial_no.length >= 11 && (cur as { status: string } | null)?.status !== "listed";
   const { error } = await ctx.supabase
     .from("inventory_units")
     .update({ ...(serialIn ? f : rest), ...(status ? { status } : {}), ...(confirmed ? { vin_confirmed: true } : {}) })
