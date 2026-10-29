@@ -33,6 +33,8 @@ export type Company = {
   bank_details: string | null;
   invoice_footer: string | null;
   default_payment_days: number;
+  /** Short code other dealers use to send cars to this dealership */
+  dealer_code: string;
 };
 
 export type Stage = {

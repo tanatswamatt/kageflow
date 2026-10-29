@@ -16,6 +16,7 @@ import { docTone } from "@/lib/badges";
 import { DOC_LABEL, DOC_SLUG, docStatusLabel, docTitle } from "@/lib/sales";
 import { CURRENCIES, type Allocation, type Payment, type SalesDoc, type SalesLine } from "@/lib/types";
 import { convertDoc, deleteDraft, emailDoc, saveDocument, setDocStatus, setTrackingStage } from "../../actions";
+import { cancelTransfer, sendTransfers } from "../../../inventory/transfer-actions";
 
 export const metadata: Metadata = { title: "Sales document" };
 
@@ -52,6 +53,19 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
         ctx.supabase.from("trade_ins").select("id, number, status, allowance, make, model").eq("order_id", id).order("created_at"),
       ])
     : [{ data: [] }, { data: [] }];
+
+  // cars on an issued invoice can go straight into the buyer's Kageflow
+  const carLines = lines.filter((l) => (l as SalesLine & { unit_id?: string | null }).unit_id);
+  const canHandOver = doc.doc_type === "invoice" && doc.status === "issued" && carLines.length > 0 && canWrite;
+  const [{ data: dealerData }, { data: transferData }] = canHandOver && doc.crm_accounts
+    ? await Promise.all([
+        ctx.supabase.rpc("linked_dealer", { p_account: doc.crm_accounts.id }),
+        ctx.supabase.from("vehicle_transfers").select("id, status, details, created_at").eq("invoice_id", id).order("created_at"),
+      ])
+    : [{ data: null }, { data: [] }];
+  const linkedDealer = dealerData as { name: string; code: string } | null;
+  const transfers = (transferData ?? []) as { id: string; status: string; details: { make?: string; model?: string; year?: number; vin?: string }; created_at: string }[];
+  const unsent = carLines.length > transfers.filter((t) => t.status === "pending" || t.status === "accepted").length;
 
   const editor = draft && canWrite
     ? await Promise.all([loadCustomers(ctx), loadCatalog(ctx, { creditFor: doc.doc_type === "credit_note" ? doc.source_doc_id : null }), loadTaxes(ctx)])
@@ -294,6 +308,43 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
                   </li>
                 ))}
               </ul>
+            </Panel>
+          )}
+
+          {canHandOver && (
+            <Panel title="Send to the buyer's Kageflow">
+              {transfers.length > 0 && (
+                <ul className="mb-3 flex flex-col gap-2 text-[13px]">
+                  {transfers.map((t) => (
+                    <li key={t.id} className="flex items-center justify-between gap-2">
+                      <span>{[t.details.year, t.details.make, t.details.model].filter(Boolean).join(" ") || t.details.vin}</span>
+                      <span className="flex items-center gap-2">
+                        <Badge tone={t.status === "accepted" ? "jade" : t.status === "pending" ? "amber" : "neutral"}>{t.status === "pending" ? "Waiting for buyer" : t.status === "accepted" ? "In their stock" : t.status === "declined" ? "Declined" : "Withdrawn"}</Badge>
+                        {t.status === "pending" && (
+                          <form action={cancelTransfer}>
+                            <input type="hidden" name="id" value={t.id} /><input type="hidden" name="back" value={back} />
+                            <SubmitButton size="sm" tone="quiet" confirm="Withdraw this car from the buyer's Kageflow?">Withdraw</SubmitButton>
+                          </form>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {unsent && (
+                <form action={sendTransfers} className="flex flex-col gap-2">
+                  <input type="hidden" name="invoice_id" value={id} />
+                  {linkedDealer ? (
+                    <p className="text-[13px] text-ink-soft">{doc.crm_accounts?.name} is <strong>{linkedDealer.name}</strong> on Kageflow ({linkedDealer.code}). Send the car&apos;s details and photos to their stock. Your costs and customers are never shared.</p>
+                  ) : (
+                    <>
+                      <p className="text-[13px] text-ink-soft">If {doc.crm_accounts?.name} uses Kageflow, ask for their dealer code (Settings, Company) and the car&apos;s details and photos go straight into their stock. Your costs and customers are never shared.</p>
+                      <Field label="Their dealer code"><Input name="code" placeholder="KF-1A2B3C" required autoCapitalize="characters" /></Field>
+                    </>
+                  )}
+                  <div><SubmitButton size="sm" pendingText="Sending…">Send {carLines.length === 1 ? "the car" : `${carLines.length} cars`}</SubmitButton></div>
+                </form>
+              )}
             </Panel>
           )}
 

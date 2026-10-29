@@ -174,8 +174,16 @@ export async function issueDoc(fd: FormData) {
   const ctx = await sales(back);
   const { data, error } = await ctx.supabase.rpc("issue_sales_doc", { p_doc: id });
   if (error) fail(back, cleanError(error.message));
+  // a car invoiced to a dealership on Kageflow goes straight to their Incoming cars
+  let sent = 0;
+  const { data: d } = await ctx.supabase.from("sales_docs").select("doc_type, crm_accounts(kageflow_company_id)").eq("id", id).maybeSingle();
+  const linked = (d as { doc_type: string; crm_accounts: { kageflow_company_id: string | null } | null } | null);
+  if (linked?.doc_type === "invoice" && linked.crm_accounts?.kageflow_company_id) {
+    const { data: n } = await ctx.supabase.rpc("send_vehicle_transfers", { p_invoice: id });
+    sent = Number(n ?? 0);
+  }
   revalidatePath("/", "layout");
-  done(back, `${(data as { number: string }).number} issued and posted to the ledger`);
+  done(back, `${(data as { number: string }).number} issued and posted to the ledger${sent ? `. ${sent === 1 ? "The car was" : `${sent} cars were`} sent to the buyer's Kageflow` : ""}`);
 }
 
 export async function deleteDraft(fd: FormData) {

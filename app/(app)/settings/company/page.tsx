@@ -34,10 +34,16 @@ export default async function CompanyPage({ searchParams }: { searchParams: Prom
             </fieldset>
           </form>
         </Panel>
-        <Panel title="Fixed settings" className="self-start">
+        <div className="flex flex-col gap-6 self-start">
+        <Panel title="Your Kageflow dealer code">
+          <div className="font-mono text-[22px] font-semibold tracking-wider">{c.dealer_code}</div>
+          <p className="mt-2 text-[13px] text-ink-soft">Give this code to dealers you buy cars from. When they invoice you a car in Kageflow, its details and photos come straight into your stock under Incoming cars.</p>
+        </Panel>
+        <Panel title="Fixed settings">
           <Dl items={[["Country", ctx.rules.name], ["Base currency", c.base_currency], ["VAT rate", ctx.rules.vatRateLabel], ["Tax authority", ctx.rules.taxAuthority], ["Privacy law", ctx.rules.privacyLaw]]} />
           <p className="mt-3 text-[13px] text-ink-faint">The country and base currency are set when the company is created and can&apos;t be changed: tax, invoices and privacy rules follow the country, and every posted amount is stored in the base currency.</p>
         </Panel>
+        </div>
       </div>
     </>
   );

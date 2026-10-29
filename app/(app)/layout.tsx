@@ -7,7 +7,12 @@ import { switchCompany } from "./actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getContext();
-  const { data: isAdmin } = await ctx.supabase.rpc("is_platform_admin");
+  const [{ data: isAdmin }, { count: incoming }] = await Promise.all([
+    ctx.supabase.rpc("is_platform_admin"),
+    ctx.can("inventory.write")
+      ? ctx.supabase.from("vehicle_transfers").select("id", { count: "exact", head: true }).eq("to_company_id", ctx.companyId).eq("status", "pending")
+      : Promise.resolve({ count: 0 }),
+  ]);
 
   const groups: NavGroup[] = [
     { title: "Overview", items: [{ href: "/dashboard", label: "Dashboard" }] },
@@ -40,6 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       title: "Stock",
       items: [
         { href: "/inventory/units", label: "Vehicles" },
+        ...(ctx.can("inventory.write") ? [{ href: "/inventory/incoming", label: incoming ? `Incoming cars (${incoming})` : "Incoming cars" }] : []),
         ...(ctx.can("inventory.write") ? [{ href: "/inventory/quick-add", label: "Add a car" }, { href: "/inventory/stock-check", label: "Stock check" }] : []),
         { href: "/inventory/products", label: "Products" },
       ],

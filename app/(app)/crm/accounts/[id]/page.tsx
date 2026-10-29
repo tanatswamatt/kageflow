@@ -16,6 +16,7 @@ import { dealTone, docTone, kindTone } from "@/lib/badges";
 import { DOC_LABEL, docStatusLabel } from "@/lib/sales";
 import type { Activity, Contact, CrmAccount, Deal, SalesDoc, Stage } from "@/lib/types";
 import { createContact, deleteAccount, updateAccount } from "../../actions";
+import { linkDealer } from "../../../inventory/transfer-actions";
 
 export const metadata: Metadata = { title: "Account" };
 
@@ -45,6 +46,8 @@ export default async function AccountPage({ params, searchParams }: { params: Pr
   const stageName = new Map(((stages ?? []) as Pick<Stage, "id" | "name">[]).map((s) => [s.id, s.name]));
   const canWrite = ctx.can("crm.write");
   const back = `/crm/accounts/${id}`;
+  const { data: dealerData } = await ctx.supabase.rpc("linked_dealer", { p_account: id });
+  const linkedDealer = dealerData as { name: string; code: string } | null;
   const editing = notice.edit === "1" && canWrite;
 
   return (
@@ -147,6 +150,21 @@ export default async function AccountPage({ params, searchParams }: { params: Pr
               ]}
             />
             {account.notes && <p className="mt-4 whitespace-pre-line border-t border-line pt-3 text-ink-soft">{account.notes}</p>}
+          </Panel>
+
+          <Panel title="On Kageflow">
+            {linkedDealer ? (
+              <p className="text-[13px] text-ink-soft">This is <strong>{linkedDealer.name}</strong> ({linkedDealer.code}). Cars you invoice to them go straight into their Kageflow stock.</p>
+            ) : (
+              <p className="text-[13px] text-ink-soft">If this customer is a dealership on Kageflow, add their dealer code. Cars you invoice to them then go straight into their stock with details and photos.</p>
+            )}
+            {canWrite && (
+              <form action={linkDealer} className="mt-3 flex items-end gap-2">
+                <input type="hidden" name="account_id" value={id} />
+                <Field label="Dealer code"><Input name="code" defaultValue={linkedDealer?.code ?? ""} placeholder="KF-1A2B3C" autoCapitalize="characters" /></Field>
+                <SubmitButton size="sm" tone="secondary">{linkedDealer ? "Update" : "Link"}</SubmitButton>
+              </form>
+            )}
           </Panel>
 
           <Panel title="Contacts" flush>

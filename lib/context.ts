@@ -23,7 +23,7 @@ export const getContext = cache(async () => {
   const { supabase, user } = await getUser();
   const { data, error } = await supabase
     .from("company_members")
-    .select("company_id, role, companies(id, name, legal_name, registration_no, vat_no, base_currency, country, address, phone, email, bank_details, invoice_footer, default_payment_days)")
+    .select("company_id, role, companies(id, name, legal_name, registration_no, vat_no, base_currency, country, address, phone, email, bank_details, invoice_footer, default_payment_days, dealer_code)")
     .eq("user_id", user.id)
     .order("created_at");
   if (error) throw new Error(error.message);
