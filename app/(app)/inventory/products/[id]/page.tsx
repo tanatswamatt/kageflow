@@ -5,7 +5,7 @@ import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Select, Table, Td, 
 import { SubmitButton } from "@/components/submit-button";
 import { ProductFields } from "@/components/inventory/product-fields";
 import { getContext } from "@/lib/context";
-import { date, label, money, today } from "@/lib/format";
+import { date, label, moneyFor, today } from "@/lib/format";
 import type { Product, TaxRate } from "@/lib/types";
 import { countStock, receiveStock, saveProduct } from "../../actions";
 
@@ -17,6 +17,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("products").select("*").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const p = data as Product;

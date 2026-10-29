@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Empty, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { PrintButton } from "@/components/print-button";
 import { getContext } from "@/lib/context";
-import { amount, date, money } from "@/lib/format";
+import { amount, date, moneyFor } from "@/lib/format";
 import type { Payment, SalesDoc } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Statement" };
@@ -14,6 +14,7 @@ type Entry = { date: string; kind: string; ref: string; href: string; debit: num
 export default async function StatementPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data: account } = await ctx.supabase.from("crm_accounts").select("id, name, billing_address, vat_no").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!account) notFound();
   const [{ data: docs }, { data: pays }] = await Promise.all([

@@ -5,7 +5,8 @@ import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Select } from "@/co
 import { SubmitButton } from "@/components/submit-button";
 import { TradeInFields } from "@/components/finance/trade-in-fields";
 import { getContext } from "@/lib/context";
-import { date, money, today } from "@/lib/format";
+import { vatFraction } from "@/lib/country";
+import { date, moneyFor, today } from "@/lib/format";
 import type { TradeIn } from "@/lib/finance";
 import { acceptTradeIn, saveTradeIn, undoTradeIn } from "../actions";
 
@@ -15,12 +16,14 @@ export default async function TradeInPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("trade_ins").select("*, crm_accounts(id, name)").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const t = data as TradeIn & { crm_accounts: { id: string; name: string } | null };
   const vatVendor = !!ctx.company.vat_no?.trim();
   const allowance = Number(t.allowance ?? 0);
-  const vat = vatVendor ? Math.round(allowance * 15 / 115 * 100) / 100 : 0;
+  const claim = vatVendor && (t.seller_is_vendor || ctx.rules.notionalInputTax);
+  const vat = claim ? vatFraction(allowance, ctx.rules) : 0;
   const credit = allowance - Number(t.settlement_amount);
   const draft = t.status === "draft";
   const canWrite = ctx.can("sales.write");
@@ -60,10 +63,11 @@ export default async function TradeInPage({ params, searchParams }: { params: Pr
               ["Settlement to their bank", money(t.settlement_amount)],
               ["Credit to the customer", <strong key="c" className={credit < 0 ? "text-ember-700" : ""}>{money(credit)}</strong>],
               ["Stock value (excl. VAT)", money(allowance - vat)],
-              ...(vatVendor ? ([[t.seller_is_vendor ? "Input VAT" : "Notional input VAT", money(vat)]] as [string, string][]) : []),
+              ...(claim ? ([[t.seller_is_vendor ? "Input VAT" : "Notional input VAT", money(vat)]] as [string, string][]) : []),
             ]} />
             {credit < 0 && <p className="mt-3 text-[13px] text-ember-700">Negative equity: the settlement is more than the allowance. Add the {money(-credit)} shortfall as a line on the invoice, and enter a settlement no bigger than the allowance.</p>}
-            {vatVendor && !t.seller_is_vendor && <p className="mt-3 text-xs text-ink-faint">Notional input tax applies to second-hand goods bought from non-vendors. Keep a copy of the seller&apos;s ID and a signed declaration for SARS. Check with your accountant.</p>}
+            {claim && !t.seller_is_vendor && <p className="mt-3 text-xs text-ink-faint">Notional input tax applies to second-hand goods bought from non-vendors. Keep a copy of the seller&apos;s ID and a signed declaration for {ctx.rules.taxAuthority}. Check with your accountant.</p>}
+            {vatVendor && !claim && <p className="mt-3 text-xs text-ink-faint">No input VAT is claimed on a car bought from a private seller in {ctx.rules.name}. If the seller is VAT registered and gives you a tax invoice, mark them as a VAT vendor to claim it.</p>}
             {draft && canWrite && (
               <form action={acceptTradeIn} className="mt-4 flex flex-col gap-2">
                 <input type="hidden" name="id" value={t.id} />

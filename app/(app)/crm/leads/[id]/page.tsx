@@ -7,6 +7,7 @@ import { LeadFields } from "@/components/crm/lead-fields";
 import { ActivityFeed } from "@/components/crm/activity-feed";
 import { LogActivity } from "@/components/crm/log-activity";
 import { getContext } from "@/lib/context";
+import { waDigits } from "@/lib/country";
 import { getMembers } from "@/lib/members";
 import { date, dateTime, label, personName } from "@/lib/format";
 import { leadTone } from "@/lib/badges";
@@ -34,7 +35,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   const wa = (waData ?? []) as WhatsAppMessage[];
   const lastIn = [...wa].reverse().find((m) => m.direction === "in");
   const windowOpen = !!lastIn && Date.now() - new Date(lastIn.created_at).getTime() < 24 * 3600 * 1000;
-  const phoneDigits = (lead.phone ?? "").replace(/\D/g, "").replace(/^0(\d{9})$/, "27$1");
+  const phoneDigits = waDigits(lead.phone, ctx.rules);
   const names = new Map(members.map((m) => [m.user_id, m.name]));
   const canWrite = ctx.can("crm.write");
   const converted = lead.status === "converted";
@@ -57,7 +58,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
             <form action={updateLead} className="flex flex-col gap-6">
               <input type="hidden" name="id" value={lead.id} />
               <fieldset disabled={!canWrite || converted} className="contents">
-                <LeadFields lead={lead} members={members} currency={ctx.company.base_currency} />
+                <LeadFields lead={lead} members={members} currency={ctx.company.base_currency} law={ctx.rules.privacyLawShort} />
                 {!converted && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Status">

@@ -4,7 +4,7 @@ import { Badge, Button, Empty, Input, PageHeader, Panel, Select, Stat, Table, Td
 import { PrintButton } from "@/components/print-button";
 import { getContext } from "@/lib/context";
 import { getMembers } from "@/lib/members";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import { month, taxYear, validDate } from "@/lib/periods";
 import { ageTone, askingNet, netProfit, type VehicleProfit } from "@/lib/profit";
 
@@ -15,6 +15,7 @@ const pct = (a: number, b: number) => (b ? `${((a / b) * 100).toFixed(1)}%` : ""
 export default async function ProfitPerCarPage({ searchParams }: { searchParams: Promise<{ tab?: string; from?: string; to?: string; who?: string }> }) {
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   if (!ctx.can("ledger.write")) return <Panel><p className="text-ink-soft">Profit per car is for owners, admins and accountants.</p></Panel>;
   const tab = sp.tab === "stock" ? "stock" : "sold";
   const def = month();
@@ -39,7 +40,7 @@ export default async function ProfitPerCarPage({ searchParams }: { searchParams:
 
   if (tab === "stock") {
     const value = rows.reduce((s, r) => s + Number(r.landed_cost), 0);
-    const projected = rows.map((r) => ({ r, ask: askingNet(r, vatVendor) })).map(({ r, ask }) => ({ r, ask, gross: ask !== null ? ask - Number(r.landed_cost) : null }));
+    const projected = rows.map((r) => ({ r, ask: askingNet(r, vatVendor, ctx.company.base_currency, ctx.rules.vatRate) })).map(({ r, ask }) => ({ r, ask, gross: ask !== null ? ask - Number(r.landed_cost) : null }));
     const old = rows.filter((r) => r.days_in_stock > 90).length;
     const avgDays = rows.length ? Math.round(rows.reduce((s, r) => s + r.days_in_stock, 0) / rows.length) : 0;
     return (
@@ -82,7 +83,7 @@ export default async function ProfitPerCarPage({ searchParams }: { searchParams:
     sale: s.sale + Number(r.sale_net ?? 0), gross: s.gross + Number(r.gross_profit ?? 0), addon: s.addon + Number(r.addon_profit ?? 0),
     fi: s.fi + Number(r.finance_income ?? 0), comm: s.comm + Number(r.commission ?? 0), net: s.net + netProfit(r), days: s.days + r.days_in_stock,
   }), { sale: 0, gross: 0, addon: 0, fi: 0, comm: 0, net: 0, days: 0 });
-  const presets = [["This month", month()], ["Last month", month(-1)], ["This tax year", taxYear()]] as const;
+  const presets = [["This month", month()], ["Last month", month(-1)], ["This tax year", taxYear(0, ctx.rules.taxYearStart)]] as const;
 
   return (
     <>

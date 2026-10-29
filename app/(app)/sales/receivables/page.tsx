@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Empty, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { money } from "@/lib/format";
+import { moneyFor } from "@/lib/format";
 import { daysOverdue } from "@/lib/sales";
 import type { SalesDoc } from "@/lib/types";
 
@@ -14,6 +14,7 @@ const bucket = (days: number) => (days <= 0 ? 0 : days <= 30 ? 1 : days <= 60 ? 
 
 export default async function ReceivablesPage() {
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const [{ data }, { data: pays }] = await Promise.all([
     ctx.supabase.from("sales_docs").select("*, crm_accounts(id, name)").eq("company_id", ctx.companyId).eq("doc_type", "invoice").eq("status", "issued").gt("amount_due", 0).limit(2000),
     ctx.supabase.from("customer_payments").select("account_id, currency, amount, amount_allocated, reversal_journal_id").eq("company_id", ctx.companyId).is("reversal_journal_id", null),

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button, Empty, Input, PageHeader, Panel } from "@/components/ui";
 import { PrintButton } from "@/components/print-button";
 import { getContext } from "@/lib/context";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import { month, taxYear, validDate } from "@/lib/periods";
 
 export const metadata: Metadata = { title: "Profit and loss" };
@@ -13,7 +13,8 @@ type Mv = { account_id: string; code: string; name: string; type: string; system
 export default async function ProfitLossPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const sp = await searchParams;
   const ctx = await getContext();
-  const def = taxYear();
+  const money = moneyFor(ctx.company.base_currency);
+  const def = taxYear(0, ctx.rules.taxYearStart);
   const from = validDate(sp.from) ? sp.from : def.from;
   const to = validDate(sp.to) ? sp.to : def.to;
   const { data, error } = await ctx.supabase.rpc("account_movements", { p_company: ctx.companyId, p_from: from, p_to: to });
@@ -31,7 +32,7 @@ export default async function ProfitLossPage({ searchParams }: { searchParams: P
   const fxNet = fx.reduce((s, r) => s + (r.type === "income" ? r.value : -r.value), 0);
   const net = gross - sum(opex) + fxNet;
   const base = ctx.company.base_currency;
-  const presets = [["This tax year", taxYear()], ["Last tax year", taxYear(-1)], ["This month", month()], ["Last month", month(-1)]] as const;
+  const presets = [["This tax year", taxYear(0, ctx.rules.taxYearStart)], ["Last tax year", taxYear(-1, ctx.rules.taxYearStart)], ["This month", month()], ["Last month", month(-1)]] as const;
 
   const Section = ({ title, items, sign = 1 }: { title: string; items: typeof rows; sign?: number }) => items.length ? (
     <>

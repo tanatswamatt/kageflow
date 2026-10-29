@@ -20,7 +20,7 @@ export function AccountFields({ account, members, defaultOwner }: { account?: Cr
       <Field label="Country code" hint="Two letters, e.g. ZA, KE"><Input name="country" maxLength={2} defaultValue={account?.country ?? "ZA"} /></Field>
       <Field label="Website"><Input name="website" defaultValue={account?.website ?? ""} /></Field>
       <Field label="VAT number"><Input name="vat_no" defaultValue={account?.vat_no ?? ""} /></Field>
-      <Field label="Billing address" hint="Required on tax invoices over R5,000" className="sm:col-span-2"><Textarea name="billing_address" rows={2} defaultValue={account?.billing_address ?? ""} /></Field>
+      <Field label="Billing address" hint="Printed on invoices. In South Africa, required on tax invoices over R5,000" className="sm:col-span-2"><Textarea name="billing_address" rows={2} defaultValue={account?.billing_address ?? ""} /></Field>
       <Field label="Payment terms (days)" hint="Blank uses the company default"><Input name="payment_days" inputMode="numeric" defaultValue={account?.payment_days ?? ""} /></Field>
       <OwnerSelect members={members} value={account ? account.owner_id : defaultOwner} />
       <Field label="Notes" className="sm:col-span-2"><Textarea name="notes" defaultValue={account?.notes ?? ""} /></Field>

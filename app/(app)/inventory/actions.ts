@@ -6,7 +6,7 @@ import { getContext } from "@/lib/context";
 import { bool, cleanError, done, fail, num, str } from "@/lib/forms";
 import type { UnitCostKind, UnitStatus } from "@/lib/types";
 
-function unitFields(fd: FormData) {
+function unitFields(fd: FormData, base: string) {
   const year = num(fd, "year");
   const mileage = num(fd, "mileage_km");
   return {
@@ -22,7 +22,7 @@ function unitFields(fd: FormData) {
     is_second_hand: bool(fd, "is_second_hand"),
     location: str(fd, "location"),
     list_price: num(fd, "list_price"),
-    list_currency: str(fd, "list_currency") ?? "ZAR",
+    list_currency: str(fd, "list_currency") ?? base,
     supplier_account_id: str(fd, "supplier_account_id"),
     acquired_on: str(fd, "acquired_on"),
     notes: str(fd, "notes"),
@@ -33,7 +33,7 @@ export async function createUnit(fd: FormData) {
   const back = "/inventory/units/new";
   const ctx = await getContext();
   if (!ctx.can("inventory.write")) fail(back, "Your role can't add stock");
-  const f = unitFields(fd);
+  const f = unitFields(fd, ctx.company.base_currency);
   if (!f.serial_no) fail(back, "VIN or serial number is required");
   const status = (str(fd, "status") ?? "in_stock") as UnitStatus;
   const { data, error } = await ctx.supabase.from("inventory_units").insert({ ...f, status, company_id: ctx.companyId }).select("id").single();
@@ -46,7 +46,7 @@ export async function updateUnit(fd: FormData) {
   const back = `/inventory/units/${id}`;
   const ctx = await getContext();
   if (!ctx.can("inventory.write")) fail(back, "Your role can't change stock");
-  const parsed = unitFields(fd);
+  const parsed = unitFields(fd, ctx.company.base_currency);
   const { serial_no: serialIn, ...rest } = parsed;
   const f = serialIn ? { ...rest, serial_no: serialIn } : { ...rest, serial_no: "" };
   const status = str(fd, "status") as UnitStatus | null;

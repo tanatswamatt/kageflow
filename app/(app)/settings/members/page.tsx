@@ -125,7 +125,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
         <Panel title="Commission plans" className="mt-6" flush>
           <p className="px-5 pt-4 text-[13px] text-ink-soft">Commission is worked out when an invoice is issued, from the salesperson on that invoice. Gross profit is the selling price excluding VAT, less the car&apos;s landed cost.</p>
           <Table>
-            <thead><tr><Th>Salesperson</Th><Th>Paid on</Th><Th>Rate</Th><Th>Minimum per car (R)</Th><Th /></tr></thead>
+            <thead><tr><Th>Salesperson</Th><Th>Paid on</Th><Th>Rate</Th><Th>Minimum per car ({ctx.company.base_currency})</Th><Th /></tr></thead>
             <tbody>
               {members.map((m) => {
                 const p = plans.get(m.user_id);

@@ -123,7 +123,8 @@ export async function voidBill(fd: FormData) {
 
 export async function paySupplier(fd: FormData) {
   const supplier = str(fd, "supplier_id")!;
-  const currency = str(fd, "currency") ?? "ZAR";
+  const ctx0 = await getContext();
+  const currency = str(fd, "currency") ?? ctx0.company.base_currency;
   const back = `/purchases/payments/new?supplier=${supplier}&currency=${currency}`;
   const ctx = await buyer(back);
   const allocations: { bill_id: string; amount: number }[] = [];

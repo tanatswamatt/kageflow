@@ -8,7 +8,7 @@ export async function loadDocumentData(supabase: SupabaseClient, companyId: stri
   if (!doc) return null;
   const [{ data: lines }, { data: company }, { data: customer }, { data: source }] = await Promise.all([
     supabase.from("sales_doc_lines").select("*, inventory_units(serial_no, is_second_hand)").eq("doc_id", id).order("line_no"),
-    supabase.from("companies").select("name, legal_name, registration_no, vat_no, address, phone, email, bank_details, invoice_footer, base_currency").eq("id", companyId).single(),
+    supabase.from("companies").select("name, legal_name, registration_no, vat_no, address, phone, email, bank_details, invoice_footer, base_currency, country").eq("id", companyId).single(),
     supabase.from("crm_accounts").select("name, billing_address, vat_no, email").eq("id", doc.account_id).single(),
     doc.source_doc_id ? supabase.from("sales_docs").select("number").eq("id", doc.source_doc_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);

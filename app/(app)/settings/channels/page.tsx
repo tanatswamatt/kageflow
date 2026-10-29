@@ -126,7 +126,7 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
                 </div>
                 <form action={saveWhatsApp} className="grid gap-3 sm:grid-cols-2">
                   <input type="hidden" name="id" value={c.id} />
-                  <Field label="Business WhatsApp number"><Input name="display_phone" defaultValue={c.display_phone ?? ""} placeholder="+27 82 000 0000" /></Field>
+                  <Field label="Business WhatsApp number"><Input name="display_phone" defaultValue={c.display_phone ?? ""} placeholder={ctx.rules.phonePlaceholder} /></Field>
                   <Field label="Phone number ID"><Input name="phone_number_id" defaultValue={c.phone_number_id ?? ""} inputMode="numeric" /></Field>
                   <Field label="Permanent access token" hint={c.access_token ? "Saved. Leave blank to keep it." : "From a Meta system user"}><Input name="access_token" type="password" autoComplete="off" /></Field>
                   <Field label="App secret" hint={c.app_secret ? "Saved. Leave blank to keep it." : "Required: messages are refused until it is saved. Meta app, Settings, Basic"}><Input name="app_secret" type="password" autoComplete="off" /></Field>

@@ -12,7 +12,7 @@ export async function fileVatReturn(fd: FormData) {
   const { error } = await ctx.supabase.rpc("file_vat_return", { p_company: ctx.companyId, p_from: from, p_to: to, p_reference: str(fd, "reference") });
   if (error) fail(back, cleanError(error.message));
   revalidatePath("/reports/vat");
-  done(back, "VAT return recorded. What you owe SARS now sits in VAT control; pay it from Bank or a journal.");
+  done(back, `VAT return recorded. What you owe ${ctx.rules.taxAuthority} now sits in VAT control; pay it from Bank or a journal.`);
 }
 
 export async function undoVatReturn(fd: FormData) {

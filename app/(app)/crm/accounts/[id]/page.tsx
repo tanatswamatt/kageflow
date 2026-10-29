@@ -11,7 +11,7 @@ import { getContext } from "@/lib/context";
 import { Timeline } from "@/components/timeline";
 import type { ObjectEvent } from "@/lib/ontology";
 import { getMembers } from "@/lib/members";
-import { date, label, money, personName } from "@/lib/format";
+import { date, label, moneyFor, personName } from "@/lib/format";
 import { dealTone, docTone, kindTone } from "@/lib/badges";
 import { DOC_LABEL, docStatusLabel } from "@/lib/sales";
 import type { Activity, Contact, CrmAccount, Deal, SalesDoc, Stage } from "@/lib/types";
@@ -23,6 +23,7 @@ export default async function AccountPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const notice = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
 
   const { data } = await ctx.supabase.from("crm_accounts").select("*").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
@@ -174,7 +175,7 @@ export default async function AccountPage({ params, searchParams }: { params: Pr
                   <Field label="Job title"><Input name="job_title" /></Field>
                   <Field label="Email"><Input name="email" type="email" /></Field>
                   <Field label="Phone"><Input name="phone" type="tel" /></Field>
-                  <ConsentFields />
+                  <ConsentFields law={ctx.rules.privacyLawShort} />
                   <div><SubmitButton size="sm">Add contact</SubmitButton></div>
                 </form>
               </details>

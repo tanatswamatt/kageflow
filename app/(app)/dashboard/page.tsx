@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, ButtonLink, Empty, PageHeader, Panel, Stat } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { dateTime, label, money, personName } from "@/lib/format";
+import { dateTime, label, moneyFor, personName } from "@/lib/format";
 import { leadTone } from "@/lib/badges";
 import { SOURCE_LABEL } from "@/lib/types";
 import type { Activity, Deal, Lead, Stage } from "@/lib/types";
@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const base = ctx.company.base_currency;
   const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString();
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();

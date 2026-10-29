@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, ButtonLink, Empty, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import { billStatus, billTitle, type Bill } from "@/lib/purchases";
 
 export const metadata: Metadata = { title: "Bills and expenses" };
@@ -20,6 +20,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const f = FILTERS.some(([k]) => k === sp.f) ? sp.f! : "open";
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   let query = ctx.supabase.from("purchase_bills").select("*, crm_accounts(name)").eq("company_id", ctx.companyId);
   if (f === "open") query = query.eq("status", "posted").gt("amount_due", 0);
   if (f === "draft") query = query.eq("status", "draft");

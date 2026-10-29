@@ -8,6 +8,7 @@ import { StageMove } from "@/components/crm/stage-move";
 import { ActivityFeed } from "@/components/crm/activity-feed";
 import { LogActivity } from "@/components/crm/log-activity";
 import { getContext } from "@/lib/context";
+import { CURRENCIES } from "@/lib/types";
 import { getMembers } from "@/lib/members";
 import { date, label, money, personName } from "@/lib/format";
 import { dealTone } from "@/lib/badges";
@@ -70,7 +71,7 @@ export default async function DealPage({ params, searchParams }: { params: Promi
                 <Field label="Value"><Input name="value" inputMode="decimal" defaultValue={deal.value} /></Field>
                 <Field label="Currency">
                   <Select name="currency" defaultValue={deal.currency}>
-                    {["ZAR", "USD", "EUR", "GBP", "KES", "BWP", "ZMW", "MZN"].map((c) => <option key={c}>{c}</option>)}
+                    {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
                   </Select>
                 </Field>
                 <Field label="Expected close"><Input name="expected_close" type="date" defaultValue={deal.expected_close ?? ""} /></Field>

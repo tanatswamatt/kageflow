@@ -21,9 +21,9 @@ export default async function CompanyPage({ searchParams }: { searchParams: Prom
             <fieldset disabled={!canEdit} className="contents">
               <Field label="Trading name" className="sm:col-span-2"><Input name="name" defaultValue={c.name} required /></Field>
               <Field label="Registered name" className="sm:col-span-2"><Input name="legal_name" defaultValue={c.legal_name ?? ""} /></Field>
-              <Field label="CIPC registration number"><Input name="registration_no" defaultValue={c.registration_no ?? ""} /></Field>
-              <Field label="VAT number" hint="Set this if VAT registered: invoices then print as Tax Invoice"><Input name="vat_no" defaultValue={c.vat_no ?? ""} /></Field>
-              <Field label="Address" hint="Printed on invoices (SARS requires it)" className="sm:col-span-2"><Textarea name="address" rows={3} defaultValue={c.address ?? ""} /></Field>
+              <Field label={ctx.rules.registrationLabel}><Input name="registration_no" defaultValue={c.registration_no ?? ""} /></Field>
+              <Field label="VAT number" hint={ctx.rules.fiscalInvoices ? `Set this if VAT registered with ${ctx.rules.taxAuthority}. Tax invoices still come from your fiscal device` : "Set this if VAT registered: invoices then print as Tax Invoice"}><Input name="vat_no" defaultValue={c.vat_no ?? ""} /></Field>
+              <Field label="Address" hint={`Printed on invoices (${ctx.rules.taxAuthority} requires it)`} className="sm:col-span-2"><Textarea name="address" rows={3} defaultValue={c.address ?? ""} /></Field>
               <Field label="Phone"><Input name="phone" defaultValue={c.phone ?? ""} /></Field>
               <Field label="Email for customer replies"><Input name="email" type="email" defaultValue={c.email ?? ""} /></Field>
               <Field label="Bank details" hint="Printed on invoices and quotes" className="sm:col-span-2"><Textarea name="bank_details" rows={3} defaultValue={c.bank_details ?? ""} placeholder={"FNB, Account 62000000000\nBranch 250655, Swift FIRNZAJJ"} /></Field>
@@ -35,8 +35,8 @@ export default async function CompanyPage({ searchParams }: { searchParams: Prom
           </form>
         </Panel>
         <Panel title="Fixed settings" className="self-start">
-          <Dl items={[["Base currency", c.base_currency], ["Country", c.country === "ZA" ? "South Africa" : c.country]]} />
-          <p className="mt-3 text-[13px] text-ink-faint">The base currency is set when the company is created because every posted amount is stored in it.</p>
+          <Dl items={[["Country", ctx.rules.name], ["Base currency", c.base_currency], ["VAT rate", ctx.rules.vatRateLabel], ["Tax authority", ctx.rules.taxAuthority], ["Privacy law", ctx.rules.privacyLaw]]} />
+          <p className="mt-3 text-[13px] text-ink-faint">The country and base currency are set when the company is created and can&apos;t be changed: tax, invoices and privacy rules follow the country, and every posted amount is stored in the base currency.</p>
         </Panel>
       </div>
     </>

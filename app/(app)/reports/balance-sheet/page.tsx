@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button, Empty, Input, PageHeader, Panel } from "@/components/ui";
 import { PrintButton } from "@/components/print-button";
 import { getContext } from "@/lib/context";
-import { date, money, today } from "@/lib/format";
+import { date, moneyFor, today } from "@/lib/format";
 import { validDate } from "@/lib/periods";
 
 export const metadata: Metadata = { title: "Balance sheet" };
@@ -13,6 +13,7 @@ type Row = { account_id: string; code: string; name: string; type: string; balan
 export default async function BalanceSheetPage({ searchParams }: { searchParams: Promise<{ as_of?: string }> }) {
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const asOf = validDate(sp.as_of) ? sp.as_of : today();
   const { data, error } = await ctx.supabase.rpc("trial_balance", { p_company: ctx.companyId, p_as_of: asOf });
   const rows = ((data ?? []) as Row[]).map((r) => ({ ...r, balance: Number(r.balance) })).filter((r) => Math.round(r.balance * 100) !== 0).sort((a, b) => a.code.localeCompare(b.code));

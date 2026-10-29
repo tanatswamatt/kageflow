@@ -4,7 +4,7 @@ import { ButtonLink, Notice, PageHeader } from "@/components/ui";
 import { StageMove } from "@/components/crm/stage-move";
 import { getContext } from "@/lib/context";
 import { memberNames } from "@/lib/members";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import type { Deal, Stage } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Deals" };
@@ -14,6 +14,7 @@ type DealRow = Deal & { crm_accounts: { name: string } | null };
 export default async function DealsPage({ searchParams }: { searchParams: Promise<{ closed?: string; error?: string; ok?: string }> }) {
   const params = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const showClosed = params.closed === "1";
   const base = ctx.company.base_currency;
 

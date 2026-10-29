@@ -5,8 +5,8 @@ import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Select, Textarea } 
 import { SubmitButton } from "@/components/submit-button";
 import { FinanceCalculator } from "@/components/finance/calculator";
 import { getContext } from "@/lib/context";
-import { date, dateTime, money, today } from "@/lib/format";
-import { amountToFinance, BANKS, FINANCE_DOCS, FINANCE_LABEL, FINANCE_TONE, type FinanceApplication, type FinanceSubmission } from "@/lib/finance";
+import { date, dateTime, moneyFor, today } from "@/lib/format";
+import { amountToFinance, banksFor, FINANCE_DOCS, FINANCE_LABEL, FINANCE_TONE, type FinanceApplication, type FinanceSubmission } from "@/lib/finance";
 import { loadBankAccounts } from "@/lib/purchases-data";
 import { addSubmission, recordPayout, saveApplication, setApplicationCancelled, updateSubmission } from "../actions";
 
@@ -18,6 +18,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
   const { id } = await params;
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   if (!ctx.can("sales.write")) notFound();
   const { data } = await ctx.supabase.from("finance_applications").select("*, crm_accounts(id, name), sales_docs(id, number, total), inventory_units(id, stock_no, make, model, year, serial_no)").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
@@ -53,7 +54,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="First names"><Input name="first_name" defaultValue={app.first_name ?? ""} /></Field>
                 <Field label="Surname"><Input name="last_name" defaultValue={app.last_name ?? ""} /></Field>
-                <Field label="ID number"><Input name="id_number" inputMode="numeric" defaultValue={app.id_number ?? ""} autoComplete="off" /></Field>
+                <Field label={ctx.rules.idLabel} hint={`${ctx.rules.idHint}, or a passport number`}><Input name="id_number" inputMode={ctx.rules.code === "ZA" ? "numeric" : "text"} defaultValue={app.id_number ?? ""} autoComplete="off" /></Field>
                 <Field label="Cellphone"><Input name="phone" defaultValue={app.phone ?? ""} /></Field>
                 <Field label="Email"><Input name="email" type="email" defaultValue={app.email ?? ""} /></Field>
                 <Field label="Marital status"><Select name="marital_status" defaultValue={app.marital_status ?? ""}><option value="">Not set</option>{["Single", "Married in community of property", "Married out of community of property", "Divorced", "Widowed", "Life partner"].map((o) => <option key={o}>{o}</option>)}</Select></Field>
@@ -156,7 +157,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
             {!cancelled && (
               <form action={addSubmission} className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4">
                 <input type="hidden" name="application_id" value={app.id} />
-                <Field label="Send to"><Select name="bank" defaultValue="WesBank">{BANKS.map((b) => <option key={b}>{b}</option>)}</Select></Field>
+                <Field label="Send to"><Select name="bank" defaultValue={banksFor(ctx.rules.code)[0]}>{banksFor(ctx.rules.code).map((b) => <option key={b}>{b}</option>)}</Select></Field>
                 <Field label="Bank ref (optional)"><Input name="reference" /></Field>
                 <Field label="Other bank name" className="col-span-2"><Input name="bank_other" placeholder="Only if Other" /></Field>
                 <div className="col-span-2"><SubmitButton size="sm">Mark as sent</SubmitButton></div>

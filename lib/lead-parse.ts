@@ -74,7 +74,7 @@ export function parseLeadEmail(input: { from?: string | null; reply_to?: string 
   }
   let phone = field(text, ["(?:contact|cell|mobile|phone|telephone|tel)(?: ?(?:number|no\\.?))?", "cellphone", "whatsapp"]);
   if (phone) phone = phone.replace(/[^\d+ ]/g, "").trim() || null;
-  if (!phone) phone = text.match(/(?:\+27|\b0)[\s-]?\d{2}[\s-]?\d{3}[\s-]?\d{4}\b/)?.[0] ?? null;
+  if (!phone) phone = text.match(/(?:\+27|\+263|\b0)[\s-]?\d{2}[\s-]?\d{3}[\s-]?\d{4}\b/)?.[0] ?? null;
   if (!first && !last) {
     const fromName = input.from?.match(/^\s*"?([^"<@]+?)"?\s*</)?.[1]?.trim();
     if (fromName && !PORTAL_DOMAINS.test(fromName)) {

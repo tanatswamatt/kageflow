@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge, Empty, Field, Input, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { getContext } from "@/lib/context";
-import { amount, date, money } from "@/lib/format";
+import { amount, date, moneyFor } from "@/lib/format";
 import { naturalBalance, TYPE_LABEL } from "@/lib/ledger";
 import type { LedgerAccount } from "@/lib/types";
 import { updateLedgerAccount } from "../../actions";
@@ -24,6 +24,7 @@ export default async function AccountLedgerPage({ params, searchParams }: { para
   const { id } = await params;
   const notice = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("accounts").select("*").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const account = data as LedgerAccount;

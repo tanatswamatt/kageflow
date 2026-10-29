@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, ButtonLink, Empty, Input, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { money } from "@/lib/format";
+import { moneyFor } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Products" };
@@ -12,6 +12,7 @@ const TRACK = { stock: "Counted", none: "Service", serial: "By VIN" } as const;
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ q?: string; low?: string; error?: string; ok?: string }> }) {
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const q = sp.q?.trim();
   let query = ctx.supabase.from("products").select("*").eq("company_id", ctx.companyId).order("name").limit(1000);
   if (q) {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button, Empty, Input, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { amount, date, money, today } from "@/lib/format";
+import { amount, date, moneyFor, today } from "@/lib/format";
 import { TYPE_LABEL, TYPE_ORDER } from "@/lib/ledger";
 import type { AccountType } from "@/lib/types";
 
@@ -13,6 +13,7 @@ type Row = { account_id: string; code: string; name: string; type: AccountType; 
 export default async function TrialBalancePage({ searchParams }: { searchParams: Promise<{ as_of?: string; zero?: string }> }) {
   const params = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const asOf = params.as_of && /^\d{4}-\d{2}-\d{2}$/.test(params.as_of) ? params.as_of : today();
   const showZero = params.zero === "1";
   const { data, error } = await ctx.supabase.rpc("trial_balance", { p_company: ctx.companyId, p_as_of: asOf });

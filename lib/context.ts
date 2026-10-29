@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import { can, type Permission } from "./permissions";
+import { countryRules } from "./country";
 import type { Company, Role } from "./types";
 
 export const COMPANY_COOKIE = "kf_company";
@@ -38,6 +39,8 @@ export const getContext = cache(async () => {
     user,
     companyId: active.company_id,
     company: active.companies as Company,
+    /** Tax, invoice and privacy rules for the company's country (fixed at sign-up) */
+    rules: countryRules(active.companies!.country),
     role: active.role,
     companies: memberships.map((m) => ({ id: m.company_id, name: m.companies!.name, role: m.role })),
     can: (p: Permission) => can(active.role, p),

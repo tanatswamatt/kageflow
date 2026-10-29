@@ -9,6 +9,11 @@ export function money(value: number | string | null | undefined, currency = "ZAR
   return currency === "ZAR" ? `${sign}R ${body}` : `${sign}${currency} ${body}`;
 }
 
+/** money() that defaults to the company's base currency, so ZAR and USD books both read right */
+export function moneyFor(base: string) {
+  return (value: number | string | null | undefined, currency?: string | null) => money(value, currency || base);
+}
+
 /** Plain amount for ledger columns; blank for zero */
 export function amount(value: number | string | null | undefined): string {
   const n = typeof value === "string" ? Number(value) : (value ?? 0);

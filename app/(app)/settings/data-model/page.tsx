@@ -46,7 +46,7 @@ export default async function DataModelPage() {
         <Panel title="How it stays private">
           <ul className="flex list-disc flex-col gap-2 pl-5 text-sm text-ink-soft">
             <li>Every object belongs to one company. Other companies can never read it.</li>
-            <li><Badge tone="ember">personal</Badge> fields (ID numbers, income, phone numbers, messages) follow POPIA. Finance applications are hidden from viewers.</li>
+            <li><Badge tone="ember">personal</Badge> fields (ID numbers, income, phone numbers, messages) follow {ctx.rules.privacyLaw}. Finance applications are hidden from viewers.</li>
             <li><Badge tone="amber">financial</Badge> fields (costs, the books) are limited to owners, admins and accountants where it matters.</li>
             <li>Timelines and search read through the same rules, so nobody sees more there than on the record itself.</li>
           </ul>

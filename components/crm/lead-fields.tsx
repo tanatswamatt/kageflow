@@ -5,7 +5,7 @@ import { label } from "@/lib/format";
 import { LEAD_SOURCES, SOURCE_LABEL, type Lead } from "@/lib/types";
 import type { MemberWithProfile } from "@/lib/members";
 
-export function LeadFields({ lead, members, defaultOwner, currency }: { lead?: Lead; members: MemberWithProfile[]; defaultOwner?: string; currency: string }) {
+export function LeadFields({ lead, members, defaultOwner, currency, law }: { lead?: Lead; members: MemberWithProfile[]; defaultOwner?: string; currency: string; law?: string }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="First name"><Input name="first_name" defaultValue={lead?.first_name ?? ""} autoComplete="off" /></Field>
@@ -24,7 +24,7 @@ export function LeadFields({ lead, members, defaultOwner, currency }: { lead?: L
         <Input name="estimated_value" inputMode="decimal" defaultValue={lead?.estimated_value ?? ""} />
       </Field>
       <OwnerSelect members={members} value={lead ? lead.owner_id : defaultOwner} />
-      <ConsentFields basis={lead?.consent_basis} source={lead?.consent_source} />
+      <ConsentFields basis={lead?.consent_basis} source={lead?.consent_source} law={law} />
       <Field label="Notes" className="sm:col-span-2"><Textarea name="notes" defaultValue={lead?.notes ?? ""} /></Field>
     </div>
   );

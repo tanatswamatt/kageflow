@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, ButtonLink, Empty, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import { amountToFinance, FINANCE_LABEL, FINANCE_TONE, type FinanceApplication, type FinanceSubmission } from "@/lib/finance";
 
 export const metadata: Metadata = { title: "Finance applications" };
@@ -14,6 +14,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const v = VIEWS.some(([k]) => k === sp.v) ? sp.v! : "open";
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   if (!ctx.can("sales.write")) return <Panel><p className="text-ink-soft">Finance applications hold ID numbers and income, so viewers can&apos;t see them.</p></Panel>;
   let q = ctx.supabase.from("finance_applications").select("*, crm_accounts(name), finance_submissions(bank, status)").eq("company_id", ctx.companyId).order("updated_at", { ascending: false }).limit(300);
   if (v === "open") q = q.in("status", ["draft", "submitted", "approved", "contracted"]);

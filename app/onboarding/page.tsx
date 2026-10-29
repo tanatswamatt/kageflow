@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Logo } from "@/components/logo";
-import { Field, Input, Notice } from "@/components/ui";
+import { Notice } from "@/components/ui";
+import { CompanyForm } from "@/components/onboarding/company-form";
 import { SubmitButton } from "@/components/submit-button";
 import { getUser } from "@/lib/context";
 import { label } from "@/lib/format";
@@ -40,26 +41,10 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
         )}
         <h1 className={`${invites.length ? "mt-10 text-[18px]" : "mt-8 text-[22px]"} font-semibold`}>{invites.length ? "Or set up a new company" : "Set up your company"}</h1>
         <p className="mt-1 mb-6 text-ink-soft">
-          We&apos;ll create a South African chart of accounts and a sales pipeline for you. You can change both later.
+          We&apos;ll set up a chart of accounts, VAT and a sales pipeline for your country. You can change the accounts and pipeline later.
         </p>
         <Notice params={params} />
-        <form action={createCompany} className="grid gap-4 rounded-[var(--radius-panel)] border border-line bg-surface p-6 sm:grid-cols-2">
-          <Field label="Trading name" className="sm:col-span-2">
-            <Input name="name" required minLength={2} placeholder="Mzansi Motors" />
-          </Field>
-          <Field label="Registered name" className="sm:col-span-2">
-            <Input name="legal_name" placeholder="Mzansi Motors (Pty) Ltd" />
-          </Field>
-          <Field label="CIPC registration number">
-            <Input name="registration_no" placeholder="2024/123456/07" />
-          </Field>
-          <Field label="VAT number" hint="Leave blank if not VAT registered">
-            <Input name="vat_no" inputMode="numeric" />
-          </Field>
-          <div className="sm:col-span-2">
-            <SubmitButton pendingText="Creating company…">Create company</SubmitButton>
-          </div>
-        </form>
+        <CompanyForm action={createCompany} />
       </div>
     </main>
   );

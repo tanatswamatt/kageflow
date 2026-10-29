@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { StatementImport } from "@/components/banking/statement-import";
 import { getContext } from "@/lib/context";
 import { fail } from "@/lib/forms";
-import { date, money, today } from "@/lib/format";
+import { date, moneyFor, today } from "@/lib/format";
 import { autoMatch, ignoreLine, importStatement, matchLine, postLine, unmatchLine } from "../actions";
 
 export const metadata: Metadata = { title: "Reconcile" };
@@ -20,6 +20,7 @@ export default async function ReconcilePage({ params, searchParams }: { params: 
   const { id } = await params;
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   if (!ctx.can("banking.write")) fail("/dashboard", "Only owners, admins and accountants can reconcile the bank");
   const { data: bank } = await ctx.supabase.from("accounts").select("id, code, name, type").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!bank) notFound();
@@ -95,7 +96,7 @@ export default async function ReconcilePage({ params, searchParams }: { params: 
                             {vatVendor && vatStd ? (
                               <select name="tax_rate_id" defaultValue="" aria-label="VAT" className="h-9 rounded-[var(--radius-control)] border border-line-strong bg-surface px-2 text-sm">
                                 <option value="">No VAT</option>
-                                <option value={vatStd.id}>Includes 15% VAT</option>
+                                <option value={vatStd.id}>Includes {ctx.rules.vatRateLabel} VAT</option>
                               </select>
                             ) : <span />}
                             <input name="description" defaultValue={l.description} aria-label="Description" className="h-9 rounded-[var(--radius-control)] border border-line-strong bg-surface px-2 text-sm" />

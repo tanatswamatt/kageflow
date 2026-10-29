@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getContext } from "@/lib/context";
+import { vatFraction } from "@/lib/country";
 import { cleanError } from "@/lib/forms";
 import { cleanVin, decodeVinLocal, vinProblem } from "@/lib/vin";
 
@@ -88,7 +89,7 @@ export async function quickAddVehicle(input: {
   const price = n(input.price);
   if (price && price > 0 && input.paidFrom && ctx.can("inventory.costs")) {
     const vatVendor = !!ctx.company.vat_no?.trim();
-    const vat = vatVendor && input.privateSeller ? Math.round((price * 15 / 115) * 100) / 100 : 0;
+    const vat = vatVendor && input.privateSeller && ctx.rules.notionalInputTax ? vatFraction(price, ctx.rules) : 0;
     const { error: costError } = await ctx.supabase.rpc("add_unit_cost", {
       p_unit: data.id, p_kind: "purchase", p_amount: Math.round((price - vat) * 100) / 100, p_paid_from: input.paidFrom, p_vat: vat,
       p_description: input.privateSeller ? "Bought from a private seller" : "Purchase price", p_supplier: input.supplierId || null,

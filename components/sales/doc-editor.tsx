@@ -201,7 +201,7 @@ export function DocEditor({
             </label>
             <label className="flex flex-col gap-1.5 sm:col-span-2">
               <span className="text-[13px] font-medium text-ink-soft">Billing address</span>
-              <textarea name="new_customer_address" rows={2} className={`${field} h-auto py-2`} placeholder="Needed on tax invoices over R5,000" />
+              <textarea name="new_customer_address" rows={2} className={`${field} h-auto py-2`} placeholder="Printed on the invoice" />
             </label>
             {customers.length > 0 && (
               <button type="button" onClick={() => setNewCustomer(false)} className="justify-self-start text-[13px] font-medium text-shadow-700 hover:underline">

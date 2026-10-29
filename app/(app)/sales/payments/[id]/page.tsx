@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Select, Table, Td, Th } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { getContext } from "@/lib/context";
-import { amount, date, label, money } from "@/lib/format";
+import { amount, date, label, moneyFor } from "@/lib/format";
 import type { Allocation, Payment, SalesDoc } from "@/lib/types";
 import { allocate, reversePayment } from "../../actions";
 
@@ -16,6 +16,7 @@ export default async function PaymentPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const notice = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("customer_payments").select("*, crm_accounts(id, name), accounts!customer_payments_company_id_bank_account_id_fkey(code, name)").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const p = data as Row;

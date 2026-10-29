@@ -9,11 +9,11 @@ export type VehicleProfit = {
 
 export const netProfit = (v: VehicleProfit) => Number(v.gross_profit ?? 0) + Number(v.addon_profit ?? 0) + Number(v.finance_income ?? 0) - Number(v.commission ?? 0);
 
-/** Asking price excluding VAT, in rand, when it can be worked out */
-export function askingNet(v: VehicleProfit, vatVendor: boolean): number | null {
+/** Asking price excluding VAT, in the base currency, when it can be worked out */
+export function askingNet(v: VehicleProfit, vatVendor: boolean, base: string, vatRate: number): number | null {
   const price = v.advert_price ?? v.list_price;
-  if (price === null || price === undefined || v.list_currency !== "ZAR") return null;
-  return vatVendor ? Math.round((Number(price) / 1.15) * 100) / 100 : Number(price);
+  if (price === null || price === undefined || v.list_currency !== base) return null;
+  return vatVendor ? Math.round((Number(price) / (1 + vatRate)) * 100) / 100 : Number(price);
 }
 
 export const ageTone = (days: number) => (days > 120 ? "ember" : days > 90 ? "amber" : days > 60 ? "shadow" : "neutral") as "ember" | "amber" | "shadow" | "neutral";

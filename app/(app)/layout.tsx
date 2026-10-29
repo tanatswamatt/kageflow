@@ -58,7 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ...(ctx.can("ledger.write") ? [{ href: "/reports/profit-per-car", label: "Profit per car" }] : []),
         { href: "/reports/profit-loss", label: "Profit and loss" },
         { href: "/reports/balance-sheet", label: "Balance sheet" },
-        { href: "/reports/vat", label: "VAT201" },
+        { href: "/reports/vat", label: ctx.rules.vatReturnName },
         { href: "/accounting/trial-balance", label: "Trial balance" },
       ],
     }] : []),

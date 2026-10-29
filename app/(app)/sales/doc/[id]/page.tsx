@@ -11,7 +11,7 @@ import { getContext } from "@/lib/context";
 import { setSalesperson } from "../../commissions/actions";
 import { getMembers } from "@/lib/members";
 import { FINANCE_LABEL } from "@/lib/finance";
-import { amount, date, money } from "@/lib/format";
+import { amount, date, moneyFor } from "@/lib/format";
 import { docTone } from "@/lib/badges";
 import { DOC_LABEL, DOC_SLUG, docStatusLabel, docTitle } from "@/lib/sales";
 import { CURRENCIES, type Allocation, type Payment, type SalesDoc, type SalesLine } from "@/lib/types";
@@ -27,6 +27,7 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
   const { id } = await params;
   const notice = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("sales_docs").select("*, crm_accounts(id, name, email, billing_address, vat_no)").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const doc = data as Doc;

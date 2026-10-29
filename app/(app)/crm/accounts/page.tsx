@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge, ButtonLink, Empty, Input, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
 import { memberNames } from "@/lib/members";
-import { label, money } from "@/lib/format";
+import { label, moneyFor } from "@/lib/format";
 import { kindTone } from "@/lib/badges";
 import type { CrmAccount } from "@/lib/types";
 
@@ -12,6 +12,7 @@ export const metadata: Metadata = { title: "Accounts" };
 export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ q?: string; error?: string; ok?: string }> }) {
   const params = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const q = params.q?.trim();
   let query = ctx.supabase.from("crm_accounts").select("*").eq("company_id", ctx.companyId).order("name").limit(300);
   if (q) query = query.ilike("name", `%${q}%`);

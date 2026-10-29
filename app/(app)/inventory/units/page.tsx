@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, ButtonLink, Empty, Input, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { label, money } from "@/lib/format";
+import { label, moneyFor } from "@/lib/format";
 import { unitTone } from "@/lib/badges";
 import type { Unit } from "@/lib/types";
 
@@ -19,6 +19,7 @@ const VIEWS = [
 export default async function UnitsPage({ searchParams }: { searchParams: Promise<{ v?: string; q?: string; error?: string; ok?: string }> }) {
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const view = VIEWS.find((v) => v.key === sp.v) ?? VIEWS[0]!;
   const q = sp.q?.trim();
   let query = ctx.supabase.from("inventory_units").select("*").eq("company_id", ctx.companyId).in("status", view.statuses).order("created_at", { ascending: false }).limit(500);

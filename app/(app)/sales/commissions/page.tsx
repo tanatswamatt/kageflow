@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge, buttonClass, Empty, Field, Input, Notice, PageHeader, Panel, Select, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
 import { memberNames } from "@/lib/members";
-import { date, label, money, today } from "@/lib/format";
+import { date, label, moneyFor, today } from "@/lib/format";
 import { loadBankAccounts } from "@/lib/purchases-data";
 import { cancelCommission, commissionAction } from "./actions";
 
@@ -11,15 +11,16 @@ export const metadata: Metadata = { title: "Commission" };
 
 type K = { id: string; invoice_id: string; user_id: string; basis: string; rate: number; sale_amount: number; gross_profit: number; amount: number; status: string; note: string | null; created_at: string; sales_docs: { number: string | null; issue_date: string } | null };
 const TONE: Record<string, "amber" | "shadow" | "jade" | "neutral"> = { pending: "amber", approved: "shadow", paid: "jade", cancelled: "neutral" };
-const BASIS: Record<string, (r: number) => string> = {
+const BASIS: Record<string, (r: number, money: (v: number) => string) => string> = {
   gross_profit_pct: (r) => `${r}% of gross profit`,
   sale_pct: (r) => `${r}% of sale`,
-  flat_per_car: (r) => `R${r} per car`,
+  flat_per_car: (r, money) => `${money(r)} per car`,
 };
 
 export default async function CommissionsPage({ searchParams }: { searchParams: Promise<{ s?: string; error?: string; ok?: string }> }) {
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const status = ["pending", "approved", "paid", "cancelled", "all"].includes(sp.s ?? "") ? sp.s! : "pending";
   let q = ctx.supabase.from("commissions").select("*, sales_docs(number, issue_date)").eq("company_id", ctx.companyId).order("created_at", { ascending: false }).limit(500);
   if (status !== "all") q = q.eq("status", status);
@@ -47,7 +48,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
                     {canManage && <Td>{(k.status === "pending" || k.status === "approved") && <input type="checkbox" name="ids" value={k.id} aria-label="Select" className="size-4 accent-jade-700" />}</Td>}
                     <Td><Link className="font-medium hover:underline" href={`/sales/doc/${k.invoice_id}`}>{k.sales_docs?.number}</Link><div className="text-xs text-ink-faint">{date(k.sales_docs?.issue_date)}</div></Td>
                     <Td>{names.get(k.user_id) ?? "Former member"}</Td>
-                    <Td className="text-ink-soft">{BASIS[k.basis]?.(Number(k.rate)) ?? k.basis}</Td>
+                    <Td className="text-ink-soft">{BASIS[k.basis]?.(Number(k.rate), money) ?? k.basis}</Td>
                     <Td className="num">{money(k.sale_amount)}</Td>
                     <Td className="num">{money(k.gross_profit)}</Td>
                     <Td className="num font-semibold">{money(k.amount)}</Td>

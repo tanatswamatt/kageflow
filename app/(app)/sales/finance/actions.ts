@@ -12,18 +12,6 @@ async function seller(back: string) {
   return ctx;
 }
 
-/** South African ID: 13 digits with a Luhn check digit */
-function validSaId(id: string): boolean {
-  if (!/^\d{13}$/.test(id)) return false;
-  let sum = 0;
-  for (let i = 0; i < 13; i++) {
-    let d = Number(id[12 - i]);
-    if (i % 2 === 1) { d *= 2; if (d > 9) d -= 9; }
-    sum += d;
-  }
-  return sum % 10 === 0;
-}
-
 export async function createApplication(fd: FormData) {
   const back = "/sales/finance/new";
   const ctx = await seller(back);
@@ -73,8 +61,11 @@ export async function saveApplication(fd: FormData) {
   const id = str(fd, "id")!;
   const back = `/sales/finance/${id}`;
   const ctx = await seller(back);
-  const idNo = str(fd, "id_number")?.replace(/\s/g, "") ?? null;
-  if (idNo && /^\d{13}$/.test(idNo) && !validSaId(idNo)) fail(back, "That ID number fails the check digit. Check it against the ID document.");
+  const r = ctx.rules;
+  const idNo = (r.code === "ZW" ? str(fd, "id_number")?.toUpperCase() : str(fd, "id_number")?.replace(/\s/g, "")) ?? null;
+  // a passport number is allowed; a number that looks like the national ID must be valid
+  if (idNo && r.code === "ZA" && /^\d{13}$/.test(idNo) && !r.validId(idNo)) fail(back, "That ID number fails the check digit. Check it against the ID document.");
+  if (idNo && r.code === "ZW" && /^\d{2}-?\d{5,}/.test(idNo) && !r.validId(idNo)) fail(back, `That national ID doesn't look right. Enter it like ${r.idHint.replace("For example ", "")}, or enter a passport number.`);
   const documents: Record<string, boolean> = {};
   for (const [k] of FINANCE_DOCS) documents[k] = bool(fd, `doc_${k}`);
   const consent = bool(fd, "consent");

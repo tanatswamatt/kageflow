@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, ButtonLink, Empty, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import { docTone } from "@/lib/badges";
 import { DOC_LABEL, DOC_SLUGS, docStatusLabel, docTitle } from "@/lib/sales";
 import type { SalesDoc } from "@/lib/types";
@@ -25,6 +25,7 @@ export default async function SalesListPage({ params, searchParams }: { params: 
   const type = DOC_SLUGS[slug];
   if (!type) notFound();
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const f = sp.f ?? "all";
   const today = new Date().toISOString().slice(0, 10);
 

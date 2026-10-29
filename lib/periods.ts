@@ -4,10 +4,13 @@ const monthEnd = (y: number, m: number) => new Date(y, m + 1, 0);
 
 export const validDate = (v: string | undefined): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
-/** South African tax year: 1 March to end of February */
-export function taxYear(offset = 0, now = new Date()) {
-  const y = (now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1) + offset;
-  return { from: iso(monthStart(y, 2)), to: iso(monthEnd(y + 1, 1)) };
+/** Tax year starting in startMonth (1-12): March in South Africa, January in Zimbabwe */
+export function taxYear(offset = 0, startMonth = 3, now = new Date()) {
+  const m0 = startMonth - 1;
+  const y = (now.getMonth() >= m0 ? now.getFullYear() : now.getFullYear() - 1) + offset;
+  return m0 === 0
+    ? { from: iso(monthStart(y, 0)), to: iso(monthEnd(y, 11)) }
+    : { from: iso(monthStart(y, m0)), to: iso(monthEnd(y + 1, m0 - 1)) };
 }
 
 export function month(offset = 0, now = new Date()) {

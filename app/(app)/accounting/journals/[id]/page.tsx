@@ -5,7 +5,7 @@ import { Badge, Dl, Field, Input, Notice, PageHeader, Panel, Table, Td, Th } fro
 import { SubmitButton } from "@/components/submit-button";
 import { getContext } from "@/lib/context";
 import { memberNames } from "@/lib/members";
-import { amount, date, dateTime, label, money, today } from "@/lib/format";
+import { amount, date, dateTime, label, moneyFor, today } from "@/lib/format";
 import type { Journal, JournalLine, LedgerAccount } from "@/lib/types";
 import { deleteJournal, postJournal, reverseJournal } from "../../actions";
 
@@ -17,6 +17,7 @@ export default async function JournalPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const notice = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("journals").select("*").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const j = data as Journal & { posted_by: string | null; created_by: string | null };

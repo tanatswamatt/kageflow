@@ -64,14 +64,14 @@ export default async function ContactPage({ params, searchParams }: { params: Pr
                 <Field label="Email"><Input name="email" type="email" defaultValue={c.email ?? ""} /></Field>
                 <Field label="Phone"><Input name="phone" type="tel" defaultValue={c.phone ?? ""} /></Field>
                 <Field label="WhatsApp"><Input name="whatsapp" type="tel" defaultValue={c.whatsapp ?? ""} /></Field>
-                <ConsentFields basis={c.consent_basis} source={c.consent_source} />
+                <ConsentFields basis={c.consent_basis} source={c.consent_source} law={ctx.rules.privacyLawShort} />
                 {canWrite && <div><SubmitButton size="sm">Save changes</SubmitButton></div>}
               </fieldset>
             </form>
           </Panel>
           {ctx.can("crm.delete") && (
             <Panel title="Delete">
-              <p className="mb-3 text-ink-soft">Use this for POPIA deletion requests. The audit log keeps a record that it happened.</p>
+              <p className="mb-3 text-ink-soft">Use this for {ctx.rules.privacyLawShort === "POPIA" ? "POPIA" : "data protection"} deletion requests. The audit log keeps a record that it happened.</p>
               <form action={deleteContact}>
                 <input type="hidden" name="id" value={c.id} />
                 <SubmitButton tone="danger" size="sm" confirm="Delete this contact permanently?">Delete contact</SubmitButton>

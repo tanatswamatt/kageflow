@@ -5,7 +5,7 @@ import { Badge, ButtonLink, Dl, Field, Input, Notice, PageHeader, Panel, Table, 
 import { SubmitButton } from "@/components/submit-button";
 import { BillEditor } from "@/components/purchases/bill-editor";
 import { getContext } from "@/lib/context";
-import { date, label, money } from "@/lib/format";
+import { date, label, moneyFor } from "@/lib/format";
 import { billStatus, billTitle, COST_KINDS, type Bill, type BillLine } from "@/lib/purchases";
 import { loadBillOptions } from "@/lib/purchases-data";
 import { discardBill, saveBill, voidBill } from "../../actions";
@@ -23,6 +23,7 @@ export default async function BillPage({ params, searchParams }: { params: Promi
   const { id } = await params;
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("purchase_bills").select("*, crm_accounts(id, name), accounts(code, name)").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const bill = data as Bill & { crm_accounts: { id: string; name: string } | null; accounts: { code: string; name: string } | null };

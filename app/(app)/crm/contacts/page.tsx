@@ -30,7 +30,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Contacts" description="People at your accounts, with the POPIA basis for holding their details." />
+      <PageHeader title="Contacts" description={`People at your accounts, with the ${ctx.rules.privacyLawShort === "POPIA" ? "POPIA" : "data protection"} basis for holding their details.`} />
       <Notice params={params} />
       <div className={`grid gap-6 ${canWrite ? "lg:grid-cols-[1fr_320px]" : ""}`}>
         <div className="min-w-0">
@@ -43,7 +43,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
             ) : (
               <Table>
                 <thead>
-                  <tr><Th>Name</Th><Th>Account</Th><Th>Email</Th><Th>Phone</Th><Th>POPIA basis</Th></tr>
+                  <tr><Th>Name</Th><Th>Account</Th><Th>Email</Th><Th>Phone</Th><Th>{ctx.rules.privacyLawShort} basis</Th></tr>
                 </thead>
                 <tbody>
                   {contacts.map((c) => (
@@ -82,7 +82,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
               <Field label="Job title"><Input name="job_title" /></Field>
               <Field label="Email"><Input name="email" type="email" /></Field>
               <Field label="Phone"><Input name="phone" type="tel" /></Field>
-              <ConsentFields />
+              <ConsentFields law={ctx.rules.privacyLawShort} />
               <div><SubmitButton size="sm">Add contact</SubmitButton></div>
             </form>
           </Panel>

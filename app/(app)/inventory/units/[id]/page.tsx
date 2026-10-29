@@ -8,7 +8,7 @@ import type { ObjectEvent } from "@/lib/ontology";
 import { SubmitButton } from "@/components/submit-button";
 import { UnitFields } from "@/components/inventory/unit-fields";
 import { getContext } from "@/lib/context";
-import { amount, date, label, money, today } from "@/lib/format";
+import { amount, date, label, moneyFor, today } from "@/lib/format";
 import { unitTone } from "@/lib/badges";
 import { UNIT_COST_KINDS, type Unit, type UnitCost, type VehiclePhoto } from "@/lib/types";
 import { askingNet, netProfit, type VehicleProfit } from "@/lib/profit";
@@ -24,6 +24,7 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
   const { id } = await params;
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("inventory_units").select("*").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
   const u = data as Unit;
@@ -41,7 +42,7 @@ export default async function UnitPage({ params, searchParams }: { params: Promi
   const { data: profitData } = ctx.can("ledger.write") ? await ctx.supabase.from("vehicle_profit").select("*").eq("unit_id", id).maybeSingle() : { data: null };
   const vp = profitData as VehicleProfit | null;
   const { data: eventData } = await ctx.supabase.from("object_events").select("*").eq("company_id", ctx.companyId).eq("subject_type", "vehicle").eq("subject_id", id).order("at", { ascending: false }).limit(300);
-  const ask = vp ? askingNet(vp, !!ctx.company.vat_no?.trim()) : null;
+  const ask = vp ? askingNet(vp, !!ctx.company.vat_no?.trim(), ctx.company.base_currency, ctx.rules.vatRate) : null;
   const canAdvert = ctx.can("inventory.write");
   const options = (list: string[], current: string | null) => [...new Set([...(current ? [current] : []), ...list])];
   const costList = (costs ?? []) as UnitCost[];

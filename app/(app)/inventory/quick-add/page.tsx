@@ -30,7 +30,7 @@ export default async function QuickAddPage({ searchParams }: { searchParams: Pro
         initialVin={sp.vin ?? ""}
         payFrom={payFrom}
         suppliers={((sup ?? []) as { id: string; name: string }[]).map((s) => ({ id: s.id, label: s.name }))}
-        vatVendor={!!ctx.company.vat_no?.trim()}
+        vatVendor={!!ctx.company.vat_no?.trim() && ctx.rules.notionalInputTax}
         canCost={ctx.can("inventory.costs")}
         decode={decodeVin}
         add={quickAddVehicle}

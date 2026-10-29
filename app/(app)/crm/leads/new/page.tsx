@@ -18,7 +18,7 @@ export default async function NewLeadPage({ searchParams }: { searchParams: Prom
       <Notice params={params} />
       <Panel className="max-w-3xl">
         <form action={createLead} className="flex flex-col gap-6">
-          <LeadFields members={members} defaultOwner={ctx.user.id} currency={ctx.company.base_currency} />
+          <LeadFields members={members} defaultOwner={ctx.user.id} currency={ctx.company.base_currency} law={ctx.rules.privacyLawShort} />
           <div><SubmitButton>Save lead</SubmitButton></div>
         </form>
       </Panel>

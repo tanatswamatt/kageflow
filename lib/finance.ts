@@ -1,3 +1,8 @@
+/** Zimbabwean banks that finance vehicles */
+export const BANKS_ZW = ["CBZ Bank", "Stanbic Bank Zimbabwe", "FBC Bank", "NMB Bank", "CABS", "ZB Bank", "Steward Bank", "Ecobank Zimbabwe", "Other"] as const;
+
+export const banksFor = (country: string): readonly string[] => (country === "ZW" ? BANKS_ZW : BANKS);
+/** South African vehicle finance houses */
 export const BANKS = ["WesBank", "Standard Bank VAF", "Absa Vehicle Finance", "MFC (Nedbank)", "Toyota Financial Services", "VW Financial Services", "Mercedes-Benz Financial Services", "BMW Financial Services", "Other"] as const;
 
 export type FinanceStatus = "draft" | "submitted" | "approved" | "declined" | "contracted" | "paid_out" | "cancelled";

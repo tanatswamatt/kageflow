@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, ButtonLink, Empty, Notice, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import type { TradeIn } from "@/lib/finance";
 
 export const metadata: Metadata = { title: "Trade-ins" };
@@ -12,6 +12,7 @@ type Row = TradeIn & { crm_accounts: { name: string } | null };
 export default async function TradeInsPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string }> }) {
   const sp = await searchParams;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("trade_ins").select("*, crm_accounts(name)").eq("company_id", ctx.companyId).order("created_at", { ascending: false }).limit(300);
   const rows = (data ?? []) as Row[];
   const owed = rows.filter((t) => t.status === "accepted").reduce((s, t) => s + Number(t.settlement_amount), 0);

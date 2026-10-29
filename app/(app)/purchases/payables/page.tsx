@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Empty, PageHeader, Panel, Table, Td, Th } from "@/components/ui";
 import { getContext } from "@/lib/context";
-import { money } from "@/lib/format";
+import { moneyFor } from "@/lib/format";
 import { daysOverdue } from "@/lib/sales";
 import type { Bill } from "@/lib/purchases";
 
@@ -13,6 +13,7 @@ const bucket = (days: number) => (days <= 0 ? 0 : days <= 30 ? 1 : days <= 60 ? 
 
 export default async function PayablesPage() {
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   const { data } = await ctx.supabase.from("purchase_bills").select("*, crm_accounts(name)").eq("company_id", ctx.companyId).eq("status", "posted").gt("amount_due", 0).limit(3000);
   const bills = (data ?? []) as (Bill & { crm_accounts: { name: string } | null })[];
   type Agg = { id: string; name: string; currency: string; b: number[]; total: number };

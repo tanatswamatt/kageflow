@@ -25,7 +25,7 @@ export type DocumentData = {
     amount_due: number;
   };
   lines: { line_no: number; description: string; quantity: number; unit_price: number; discount_pct: number; tax_rate: number; line_subtotal: number; line_tax: number; serial_no: string | null; is_second_hand: boolean | null }[];
-  company: { name: string; legal_name: string | null; registration_no: string | null; vat_no: string | null; address: string | null; phone: string | null; email: string | null; bank_details: string | null; invoice_footer: string | null; base_currency: string };
+  company: { name: string; legal_name: string | null; registration_no: string | null; vat_no: string | null; address: string | null; phone: string | null; email: string | null; bank_details: string | null; invoice_footer: string | null; base_currency: string; country?: string | null };
   customer: { name: string; billing_address: string | null; vat_no: string | null; email: string | null };
   source_number: string | null;
 };
@@ -36,7 +36,8 @@ const fmtDate = (v: string | null) => (v ? new Intl.DateTimeFormat("en-ZA", { da
 function heading(d: DocumentData): string {
   switch (d.doc.doc_type) {
     case "invoice":
-      return d.company.vat_no ? "Tax Invoice" : "Invoice";
+      // in Zimbabwe the tax invoice is the fiscal invoice from the ZIMRA fiscal device, so this one is not
+      return d.company.vat_no && d.company.country !== "ZW" ? "Tax Invoice" : "Invoice";
     case "credit_note":
       return "Credit Note";
     case "quote":
@@ -46,7 +47,7 @@ function heading(d: DocumentData): string {
   }
 }
 
-/** SARS-compliant printable document: supplier and recipient details, serial number, date, description, VAT shown separately, rand equivalents for foreign currency */
+/** Printable document: supplier and recipient details, serial number, date, description, VAT shown separately, base-currency equivalents for foreign currency (SARS rules in South Africa) */
 export function DocumentView({ data }: { data: DocumentData }) {
   const { doc, lines, company: c } = data;
   const isIssued = doc.status !== "draft";
@@ -57,6 +58,7 @@ export function DocumentView({ data }: { data: DocumentData }) {
   const address = doc.bill_to_name ? doc.bill_to_address : data.customer.billing_address;
   const vat = doc.bill_to_name ? doc.bill_to_vat_no : data.customer.vat_no;
   const anySecondHand = lines.some((l) => l.is_second_hand);
+  const notFiscal = c.country === "ZW" && !!c.vat_no && doc.doc_type === "invoice";
 
   return (
     <article className="relative mx-auto max-w-[820px] bg-white p-8 text-[13px] leading-relaxed text-[#1a1d2e] sm:p-12 print:max-w-none print:p-0">
@@ -135,7 +137,7 @@ export function DocumentView({ data }: { data: DocumentData }) {
           {anySecondHand && <p>Items marked used are second-hand goods.</p>}
           {foreign && (
             <p className="mt-2">
-              Rand equivalent at {rate} {base} per {doc.currency}: excluding VAT {base} {fmt(Number(doc.subtotal) * rate)}, VAT {base} {fmt(Number(doc.tax_total) * rate)}, total {base} {fmt(Number(doc.total) * rate)}.
+              {base === "ZAR" ? "Rand" : base} equivalent at {rate} {base} per {doc.currency}: excluding VAT {base} {fmt(Number(doc.subtotal) * rate)}, VAT {base} {fmt(Number(doc.tax_total) * rate)}, total {base} {fmt(Number(doc.total) * rate)}.
             </p>
           )}
         </div>
@@ -168,6 +170,12 @@ export function DocumentView({ data }: { data: DocumentData }) {
           <div className="whitespace-pre-line">{c.bank_details}</div>
           {doc.number && <div className="mt-1">Use <strong>{doc.number}</strong> as your payment reference.</div>}
         </section>
+      )}
+
+      {notFiscal && (
+        <p className="mt-8 rounded-md border border-[#e2e4ec] p-3 text-[12px] text-[#4a4f66]">
+          This is not a fiscal tax invoice. The fiscal tax invoice for this sale is issued from the supplier&apos;s ZIMRA fiscal device.
+        </p>
       )}
 
       {c.invoice_footer && <footer className="mt-8 border-t border-[#e2e4ec] pt-4 text-[12px] whitespace-pre-line text-[#7c8197]">{c.invoice_footer}</footer>}

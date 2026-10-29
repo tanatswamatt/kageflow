@@ -3,7 +3,7 @@ import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/print-button";
 import { getContext } from "@/lib/context";
-import { date, money } from "@/lib/format";
+import { date, moneyFor } from "@/lib/format";
 import { amountToFinance, FINANCE_DOCS, type FinanceApplication } from "@/lib/finance";
 
 export const metadata: Metadata = { title: "Finance application" };
@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "Finance application" };
 export default async function PrintFinancePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ctx = await getContext();
+  const money = moneyFor(ctx.company.base_currency);
   if (!ctx.can("sales.write")) notFound();
   const { data } = await ctx.supabase.from("finance_applications").select("*, inventory_units(stock_no, serial_no, make, model, variant, year, mileage_km, colour, is_second_hand)").eq("id", id).eq("company_id", ctx.companyId).maybeSingle();
   if (!data) notFound();
@@ -41,7 +42,7 @@ export default async function PrintFinancePage({ params }: { params: Promise<{ i
         </header>
         <h2 className={h}>Applicant</h2>
         {rows([
-          ["Name", [a.first_name, a.last_name].filter(Boolean).join(" ")], ["ID number", a.id_number], ["Cellphone", a.phone], ["Email", a.email],
+          ["Name", [a.first_name, a.last_name].filter(Boolean).join(" ")], [ctx.rules.idLabel, a.id_number], ["Cellphone", a.phone], ["Email", a.email],
           ["Marital status", a.marital_status], ["Dependants", a.dependants], ["Home", a.residential_status], ["Address", a.address], ["Years at address", a.years_at_address],
         ])}
         <h2 className={h}>Employment and monthly income</h2>

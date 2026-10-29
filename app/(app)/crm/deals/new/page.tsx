@@ -3,6 +3,7 @@ import { Field, Input, Notice, PageHeader, Panel, Select } from "@/components/ui
 import { SubmitButton } from "@/components/submit-button";
 import { OwnerSelect } from "@/components/crm/owner-select";
 import { getContext } from "@/lib/context";
+import { CURRENCIES } from "@/lib/types";
 import { getMembers } from "@/lib/members";
 import { personName } from "@/lib/format";
 import type { Stage } from "@/lib/types";
@@ -63,7 +64,7 @@ export default async function NewDealPage({ searchParams }: { searchParams: Prom
             <Field label="Value"><Input name="value" inputMode="decimal" placeholder="0.00" /></Field>
             <Field label="Currency">
               <Select name="currency" defaultValue={ctx.company.base_currency}>
-                {["ZAR", "USD", "EUR", "GBP", "KES", "BWP", "ZMW", "MZN"].map((c) => <option key={c}>{c}</option>)}
+                {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </Select>
             </Field>
             <OwnerSelect members={members} value={ctx.user.id} />
