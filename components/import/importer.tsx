@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { buttonClass } from "@/components/ui";
 import { IMPORTS, autoMap, parseCsv, type ImportType } from "@/lib/import-spec";
-import type { RowMatch } from "@/app/(app)/settings/import/actions";
+import type { ImportResult, RowMatch } from "@/app/(app)/settings/import/actions";
 
 type Action = "create" | "update" | "skip";
 const sel = "h-9 rounded-[var(--radius-control)] border border-line-strong bg-surface px-2 text-sm";
@@ -14,7 +14,7 @@ const MATCHABLE: ImportType[] = ["customers", "vehicles"];
 export function Importer({
   action, check, creditAccounts, canLedger,
 }: {
-  action: (fd: FormData) => Promise<void>;
+  action: (fd: FormData) => Promise<ImportResult>;
   check: (type: ImportType, rows: Record<string, string>[]) => Promise<{ matches?: RowMatch[]; error?: string }>;
   creditAccounts: { id: string; label: string; key: string | null }[];
   canLedger: boolean;
@@ -27,6 +27,7 @@ export function Importer({
   const [matches, setMatches] = useState<RowMatch[] | null>(null);
   const [choice, setChoice] = useState<Action[]>([]);
   const [pending, start] = useTransition();
+  const [result, setResult] = useState<ImportResult | null>(null);
   const spec = IMPORTS[type];
 
   const template = useMemo(() => {
@@ -38,6 +39,7 @@ export function Importer({
 
   const onFile = async (file: File | undefined) => {
     reset();
+    setResult(null);
     if (!file) return;
     if (file.size > 2_000_000) return setProblem("That file is over 2 MB. Split it into smaller files.");
     const g = parseCsv(await file.text());
@@ -68,6 +70,14 @@ export function Importer({
       setMatches(r.matches);
       setChoice(r.matches.map((m) => (m.id ? "update" : m.dupOf !== null ? "skip" : "create")));
     });
+  };
+
+  // the result shows right here, next to the button, instead of at the top of the page
+  const submit = async (fd: FormData) => {
+    setResult(null);
+    const r = await action(fd);
+    if (r.ok) reset();
+    setResult(r);
   };
 
   const payload = rows.map((r, i) => (matches ? { ...r, _action: choice[i] ?? "create", _match: matches[i]?.id ?? "" } : r));
@@ -141,7 +151,7 @@ export function Importer({
       )}
 
       {rows.length > 0 && missing.length === 0 && (
-        <form action={action} className="flex flex-col gap-4">
+        <form action={submit} className="flex flex-col gap-4">
           <input type="hidden" name="type" value={type} />
           <input type="hidden" name="rows" value={JSON.stringify(payload)} />
           <div className="max-h-[28rem] overflow-auto rounded-[var(--radius-control)] border border-line">
@@ -200,8 +210,17 @@ export function Importer({
             </label>
           )}
           {ready && <div><ImportButton count={matches ? counts.create + counts.update : rows.length} /></div>}
+          {!ready && canMatch && matches === null && <p className="text-[13px] text-amber-700">Check the rows for matches first; the Import button appears after that.</p>}
           {type === "customers" && <p className="text-xs text-ink-faint">Already have doubles from before? <Link href="/crm/duplicates" className="text-shadow-700 hover:underline">Find and merge duplicate customers</Link>.</p>}
         </form>
+      )}
+
+      {result && (
+        <div className={`rounded-[var(--radius-control)] px-4 py-3 text-[14px] ${result.ok ? "bg-jade-50 text-jade-700" : "bg-ember-50 text-ember-700"}`} role="status">
+          {result.ok ?? result.error}
+          {result.ok && type === "vehicles" && <> <Link href="/inventory/units" className="font-medium underline">See your vehicles</Link></>}
+          {result.ok && type === "customers" && <> <Link href="/crm/accounts" className="font-medium underline">See your customers</Link></>}
+        </div>
       )}
     </div>
   );
