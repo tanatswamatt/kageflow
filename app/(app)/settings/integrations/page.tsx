@@ -7,7 +7,7 @@ import { CreateKeyForm } from "@/components/integrations/create-key-form";
 import { getContext } from "@/lib/context";
 import { dateTime } from "@/lib/format";
 import type { ApiKey, StockSource, WebhookEndpoint } from "@/lib/types";
-import { addEndpoint, addStockSource, createKey, removeEndpoint, removeStockSource, revokeKey, syncNow, testEndpoint, toggleEndpoint, toggleStockSource } from "./actions";
+import { addEndpoint, addStockSource, createKey, pushListingsAction, removeEndpoint, removeStockSource, revokeKey, syncNow, testEndpoint, toggleEndpoint, toggleStockSource } from "./actions";
 import { StockSourceForm } from "@/components/integrations/stock-source-form";
 
 export const metadata: Metadata = { title: "Integrations" };
@@ -17,6 +17,7 @@ const EVENTS: [string, string][] = [
   ["invoice.issued", "Invoice issued"],
   ["credit_note.issued", "Credit note issued"],
   ["payment.received", "Payment or deposit received"],
+  ["listing.updated", "A car you advertise was published, changed, unpublished or sold (keeps your website's stock in step)"],
   ["unit.updated", "A website vehicle was reserved, sold or returned to stock"],
   ["lead.created", "A new lead arrived from email, WhatsApp or the API"],
 ];
@@ -35,6 +36,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
     ctx.supabase.rpc("webhook_delivery_log", { p_company: ctx.companyId, p_limit: 30 }),
     ctx.supabase.from("stock_sources").select("*").eq("company_id", ctx.companyId).order("created_at"),
   ]);
+  const pushOn = ((endpoints ?? []) as WebhookEndpoint[]).some((e) => e.is_active && e.events.includes("listing.updated"));
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? (await headers()).get("origin") ?? "https://your-kageflow-domain";
 
   return (
@@ -65,7 +67,18 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
             </ul>
           )}
           <StockSourceForm action={addStockSource} />
-          <p className="mt-4 text-[13px] text-ink-faint">To mark vehicles reserved or sold on the website when that happens in Kageflow, add a webhook below with the <span className="font-mono">unit.updated</span> event.</p>
+          <div className="mt-5 rounded-[var(--radius-control)] border border-line p-4">
+            <div className="text-[14px] font-semibold">Send your adverts to the website</div>
+            <p className="mt-1 text-[13px] text-ink-soft">
+              Cars you publish in Kageflow go up to your website with their photos, and come off when you unpublish or sell them. Add a webhook below to your website&apos;s Kageflow address with the <span className="font-mono">listing.updated</span> event (and <span className="font-mono">unit.updated</span> so cars that came from the website are marked reserved or sold).
+              {pushOn ? " Changes go out as you make them." : ""}
+            </p>
+            {pushOn && (
+              <form action={pushListingsAction} className="mt-3">
+                <SubmitButton size="sm" tone="secondary" pendingText="Sending…">Send all published cars now</SubmitButton>
+              </form>
+            )}
+          </div>
         </Panel>
 
         <Panel title="API keys">

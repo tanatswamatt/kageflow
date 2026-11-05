@@ -139,6 +139,15 @@ export async function syncNow(fd: FormData) {
   done(BACK, `Synced: ${c.created} new, ${c.updated} updated${c.products ? `, ${c.products} products` : ""}${c.skipped ? `, ${c.skipped} skipped (sold or incomplete)` : ""}.`);
 }
 
+export async function pushListingsAction() {
+  const ctx = await getContext();
+  if (!ctx.can("company.manage")) fail(BACK, "Only owners and admins can push stock to the website");
+  const { data, error } = await ctx.supabase.rpc("push_listings", { p_company: ctx.companyId });
+  if (error) fail(BACK, cleanError(error.message));
+  const n = data as number;
+  done(BACK, n ? `Sent ${n} published car${n === 1 ? "" : "s"} to your website. Check the delivery log below in a few seconds.` : "No published cars to send. Publish a car's advert first.");
+}
+
 export async function toggleStockSource(fd: FormData) {
   const ctx = await getContext();
   const { error } = await ctx.supabase.from("stock_sources").update({ is_active: str(fd, "active") === "true" }).eq("id", str(fd, "id")!).eq("company_id", ctx.companyId);
