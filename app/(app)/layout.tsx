@@ -83,6 +83,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         { href: "/accounting/journals", label: "Journals" },
         { href: "/accounting/accounts", label: "Chart of accounts" },
         { href: "/accounting/periods", label: "Periods" },
+        { href: "/settings/accounting", label: "Xero and Sage" },
       ],
     }] : []),
     {
