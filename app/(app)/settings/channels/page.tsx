@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Badge, Field, Input, Notice, PageHeader, Panel, Select } from "@/components/ui";
+import { Badge, Field, Input, Notice, PageHeader, Panel, Select, Textarea } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { CopyField } from "@/components/copy-field";
 import { getContext } from "@/lib/context";
 import { dateTime } from "@/lib/format";
 import type { LeadChannel, ListingFeed } from "@/lib/types";
-import { addFeed, addLeadChannel, removeFeed, removeLeadChannel, saveWhatsApp, toggleFeed, toggleLeadChannel } from "./actions";
+import { addFeed, addLeadChannel, loadTemplates, removeFeed, removeLeadChannel, saveWhatsApp, toggleFeed, toggleLeadChannel } from "./actions";
 
 export const metadata: Metadata = { title: "Listings and leads" };
 
@@ -21,6 +21,8 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
     ctx.supabase.from("lead_channels").select("*").eq("company_id", ctx.companyId).order("created_at"),
     ctx.supabase.from("inventory_units").select("id", { count: "exact", head: true }).eq("company_id", ctx.companyId).eq("is_published", true),
   ]);
+  const { data: tplData } = await ctx.supabase.from("whatsapp_templates").select("channel_id, name, language, status, category, usable, body").eq("company_id", ctx.companyId).order("name");
+  const templates = (tplData ?? []) as { channel_id: string; name: string; language: string; status: string; category: string | null; usable: boolean; body: string }[];
   const feeds = (feedData ?? []) as ListingFeed[];
   const channels = (chData ?? []) as LeadChannel[];
   const email = channels.filter((c) => c.kind === "email");
@@ -130,13 +132,41 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
                   <Field label="Phone number ID"><Input name="phone_number_id" defaultValue={c.phone_number_id ?? ""} inputMode="numeric" /></Field>
                   <Field label="Permanent access token" hint={c.access_token ? "Saved. Leave blank to keep it." : "From a Meta system user"}><Input name="access_token" type="password" autoComplete="off" /></Field>
                   <Field label="App secret" hint={c.app_secret ? "Saved. Leave blank to keep it." : "Required: messages are refused until it is saved. Meta app, Settings, Basic"}><Input name="app_secret" type="password" autoComplete="off" /></Field>
+                  <Field label="WhatsApp Business Account ID" hint="Same API setup page. Needed for templates"><Input name="waba_id" defaultValue={c.waba_id ?? ""} inputMode="numeric" /></Field>
+                  <Field label="New WhatsApp leads go to">
+                    <Select name="assign_mode" defaultValue={c.assign_mode ?? "none"}>
+                      <option value="none">Nobody: the team picks them up</option>
+                      <option value="round_robin">The salesperson with the fewest open leads</option>
+                    </Select>
+                  </Field>
+                  <Field label="Instant welcome reply (optional)" hint="Sent once to every new WhatsApp lead. {name} becomes their first name, {car} the car they asked about" className="sm:col-span-2">
+                    <Textarea name="auto_reply" rows={2} defaultValue={c.auto_reply ?? ""} placeholder="Hi {name}, thanks for your message about {car}. One of our team will reply in a few minutes." />
+                  </Field>
                   <div><SubmitButton size="sm">Save WhatsApp details</SubmitButton></div>
                 </form>
+                <div className="rounded-[var(--radius-control)] bg-paper p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-sm font-medium">Message templates</div>
+                    <form action={loadTemplates}><input type="hidden" name="id" value={c.id} /><SubmitButton size="sm" tone="secondary" pendingText="Loading…">Load templates from Meta</SubmitButton></form>
+                  </div>
+                  <p className="mt-1 text-[13px] text-ink-soft">WhatsApp only lets a business message someone first, or after 24 hours, with a template Meta has approved. Create them in WhatsApp Manager (for example a follow-up: &ldquo;Hi {"{{1}}"}, is the {"{{2}}"} still of interest?&rdquo;), then load them here.</p>
+                  {templates.filter((t) => t.channel_id === c.id).length > 0 && (
+                    <ul className="mt-2 flex flex-col gap-1 text-[13px]">
+                      {templates.filter((t) => t.channel_id === c.id).map((t) => (
+                        <li key={`${t.name}-${t.language}`} className="flex items-center justify-between gap-2">
+                          <span className="truncate"><span className="font-medium">{t.name.replace(/_/g, " ")}</span> <span className="text-ink-faint">{t.language} · {t.body.slice(0, 70)}{t.body.length > 70 ? "…" : ""}</span></span>
+                          <Badge tone={t.status !== "APPROVED" ? "amber" : t.usable ? "jade" : "neutral"}>{t.status !== "APPROVED" ? t.status.toLowerCase() : t.usable ? "Ready" : "Needs a header or link value"}</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 <ol className="list-decimal space-y-1 pl-5 text-sm text-ink-soft">
                   <li>In Meta for Developers, open your app&apos;s WhatsApp, API setup. Copy the phone number ID into the box above.</li>
                   <li>Create a permanent token (Business settings, System users, generate token with whatsapp_business_messaging) and paste it.</li>
                   <li>Paste the app secret from App settings, Basic. Kageflow uses it to reject fake messages.</li>
                   <li>Under WhatsApp, Configuration, set the callback URL and verify token above, then subscribe to <span className="font-mono">messages</span>.</li>
+                  <li>Put the WhatsApp link below on your website and adverts. A message that mentions a stock number is linked to that car automatically.</li>
                 </ol>
                 {digits && (
                   <div className="text-sm">

@@ -103,6 +103,7 @@ export type Lead = {
   converted_deal_id: string | null;
   converted_at: string | null;
   created_at: string;
+  unit_id?: string | null;
 };
 
 export type Deal = {
@@ -287,8 +288,8 @@ export type Unit = {
 
 export type VehiclePhoto = { id: string; unit_id: string; url: string; storage_path: string | null; position: number };
 export type ListingFeed = { id: string; channel: string; name: string; token: string; include_reserved: boolean; is_active: boolean; last_fetched_at: string | null; fetch_count: number; created_at: string };
-export type LeadChannel = { id: string; kind: "email" | "whatsapp"; name: string; token: string; is_active: boolean; phone_number_id: string | null; display_phone: string | null; verify_token: string | null; app_secret: string | null; access_token: string | null; last_received_at: string | null; received_count: number; created_at: string };
-export type WhatsAppMessage = { id: string; lead_id: string | null; direction: "in" | "out"; wa_id: string; body: string | null; msg_type: string; status: string | null; created_at: string };
+export type LeadChannel = { id: string; kind: "email" | "whatsapp"; name: string; token: string; is_active: boolean; phone_number_id: string | null; display_phone: string | null; verify_token: string | null; app_secret: string | null; access_token: string | null; waba_id?: string | null; auto_reply?: string | null; assign_mode?: "none" | "round_robin"; last_received_at: string | null; received_count: number; created_at: string };
+export type WhatsAppMessage = { id: string; lead_id: string | null; direction: "in" | "out"; wa_id: string; body: string | null; msg_type: string; status: string | null; created_at: string; media_id?: string | null; media_name?: string | null; media_link?: string | null; template_name?: string | null; error?: string | null };
 
 export type UnitCost = {
   id: string;

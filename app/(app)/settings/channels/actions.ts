@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getContext } from "@/lib/context";
 import { bool, cleanError, done, fail, str } from "@/lib/forms";
+import { adminClient } from "@/lib/supabase/admin";
+import { channelToken, fetchTemplates } from "@/lib/whatsapp";
 
 const BACK = "/settings/channels";
 const CHANNELS = ["autotrader", "cars_co_za", "facebook", "website", "other"];
@@ -51,7 +53,12 @@ export async function saveWhatsApp(fd: FormData) {
   const patch: Record<string, string | null> = {
     display_phone: str(fd, "display_phone"),
     phone_number_id: str(fd, "phone_number_id"),
+    waba_id: str(fd, "waba_id"),
+    auto_reply: str(fd, "auto_reply"),
+    assign_mode: str(fd, "assign_mode") === "round_robin" ? "round_robin" : "none",
   };
+  if (patch.waba_id && !/^\d{6,25}$/.test(patch.waba_id)) fail(BACK, "The WhatsApp Business Account ID is a long number from Meta's API setup page, digits only");
+  if ((patch.auto_reply?.length ?? 0) > 1000) fail(BACK, "Keep the welcome reply under 1,000 characters");
   const token = str(fd, "access_token");
   const secret = str(fd, "app_secret");
   if (token) patch.access_token = token;
@@ -60,6 +67,36 @@ export async function saveWhatsApp(fd: FormData) {
   const { error } = await ctx.supabase.from("lead_channels").update(patch).eq("id", str(fd, "id")).eq("company_id", ctx.companyId).eq("kind", "whatsapp");
   if (error) fail(BACK, cleanError(error.message));
   done(BACK, "WhatsApp details saved");
+}
+
+/** Read the approved message templates from Meta */
+export async function loadTemplates(fd: FormData) {
+  const ctx = await admin();
+  const id = str(fd, "id")!;
+  const sa = adminClient();
+  if (!sa) fail(BACK, "Kageflow's server is missing its service key (SUPABASE_SERVICE_ROLE_KEY)");
+  let count = 0;
+  try {
+    const ch = await channelToken(sa, id);
+    if (!ch.wabaId) fail(BACK, "Save the WhatsApp Business Account ID first");
+    const started = new Date().toISOString();
+    const list = await fetchTemplates(ch.token, ch.wabaId);
+    if (list.length) {
+      const { error } = await sa.from("whatsapp_templates").upsert(
+        list.map((t) => ({ company_id: ctx.companyId, channel_id: id, ...t, updated_at: new Date().toISOString() })),
+        { onConflict: "channel_id,name,language" },
+      );
+      if (error) throw new Error(error.message);
+    }
+    // templates deleted in Meta go here too
+    await sa.from("whatsapp_templates").delete().eq("channel_id", id).lt("updated_at", started);
+    count = list.filter((t) => t.status === "APPROVED" && t.usable).length;
+  } catch (e) {
+    if ((e as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) throw e;
+    fail(BACK, (e as Error).message);
+  }
+  revalidatePath(BACK);
+  done(BACK, `${count} approved template${count === 1 ? "" : "s"} ready to send`);
 }
 
 export async function toggleLeadChannel(fd: FormData) {

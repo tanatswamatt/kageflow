@@ -7,7 +7,7 @@ import { switchCompany } from "./actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getContext();
-  const [{ data: isAdmin }, { count: incoming }, { count: sharedIn }] = await Promise.all([
+  const [{ data: isAdmin }, { count: incoming }, { count: sharedIn }, { data: waWaiting }] = await Promise.all([
     ctx.supabase.rpc("is_platform_admin"),
     ctx.can("inventory.write")
       ? ctx.supabase.from("vehicle_transfers").select("id", { count: "exact", head: true }).eq("to_company_id", ctx.companyId).eq("status", "pending")
@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ctx.can("inventory.write")
       ? ctx.supabase.from("stock_shares").select("id", { count: "exact", head: true }).eq("to_company_id", ctx.companyId).eq("status", "offered")
       : Promise.resolve({ count: 0 }),
+    ctx.supabase.rpc("whatsapp_waiting", { p_company: ctx.companyId }),
   ]);
 
   const groups: NavGroup[] = [
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       title: "CRM",
       items: [
         { href: "/crm/leads", label: "Leads" },
+        { href: "/crm/whatsapp", label: waWaiting ? `WhatsApp (${waWaiting as number})` : "WhatsApp" },
         { href: "/crm/deals", label: "Deals" },
         { href: "/crm/accounts", label: "Accounts" },
         { href: "/crm/contacts", label: "Contacts" },
