@@ -40,19 +40,19 @@ export const IMPORTS: Record<ImportType, { label: string; help: string; columns:
 
 /** Other names the same column goes by in Sage, Pastel, Xero, VMG and spreadsheet exports */
 export const ALIASES: Record<string, string[]> = {
-  name: ["customer name", "account name", "customer", "client", "client name", "company", "company name", "name"],
+  name: ["full name (from file)", "customer name", "account name", "customer", "client", "client name", "full name", "display name", "contact name", "name", "company", "company name", "organization 1 - name", "organisation"],
   kind: ["type", "account type", "category"],
-  email: ["e-mail", "email address", "e-mail address", "mail"],
-  phone: ["telephone", "tel", "telephone 1", "phone number", "cell", "cellphone", "cell no", "mobile", "contact number", "contact no"],
+  email: ["e-mail", "email address", "e-mail address", "mail", "e-mail 1 - value", "primary email", "email 1", "work email", "personal email"],
+  phone: ["telephone", "tel", "telephone 1", "phone number", "cell", "cellphone", "cell no", "mobile", "mobile phone", "mobile phone number", "mobile number", "whatsapp", "whatsapp number", "phone 1 - value", "primary phone", "business phone", "home phone", "contact number", "contact no"],
   vat_no: ["vat number", "vat no", "vat reg no", "vat registration", "tax number", "tax reference", "tax no"],
-  billing_address: ["address", "postal address", "physical address", "address 1", "address line 1", "street"],
-  city: ["town", "suburb", "city/town"],
-  country: ["country code"],
+  billing_address: ["address", "postal address", "physical address", "address 1", "address line 1", "street", "street address", "billing street", "mailing street", "address 1 - street", "business street"],
+  city: ["town", "suburb", "city/town", "billing city", "mailing city", "address 1 - city", "business city"],
+  country: ["country code", "billing country", "mailing country", "address 1 - country", "country/region"],
   payment_days: ["terms", "payment terms", "days"],
   first_name: ["first name", "firstname", "given name", "name"],
   last_name: ["last name", "surname", "lastname", "family name"],
-  account_name: ["company", "customer", "account"],
-  job_title: ["title", "position", "role"],
+  account_name: ["company", "company name", "customer", "account", "account name", "organization 1 - name", "organization", "organisation"],
+  job_title: ["title", "job title", "position", "role", "organization 1 - title"],
   sku: ["code", "item code", "product code", "stock code"],
   sale_price: ["price", "selling price", "retail price", "price excl"],
   vin: ["vin", "vin number", "vin no", "chassis", "chassis number", "chassis no", "serial", "serial number"],
@@ -117,4 +117,36 @@ export function parseCsv(text: string): string[][] {
   row.push(field);
   if (row.some((x) => x.trim() !== "")) rows.push(row);
   return rows;
+}
+
+/** Phone and Google/Outlook contact exports (.vcf) as rows, so they import like a CSV */
+export function parseVcf(text: string): string[][] {
+  const rows: string[][] = [["Full name (from file)", "First name", "Last name", "Email", "Phone", "Company", "Job title"]];
+  const unfolded = text.replace(/\r?\n[ \t]/g, "");
+  for (const card of unfolded.split(/BEGIN:VCARD/i).slice(1)) {
+    const lines = card.split(/\r?\n/);
+    const get = (key: string) => lines.filter((l) => new RegExp(`^(item\\d+\\.)?${key}[;:]`, "i").test(l)).map((l) => l.slice(l.indexOf(":") + 1).replace(/\\,/g, ",").replace(/\\;/g, ";").trim());
+    const fn = get("FN")[0] ?? "";
+    const [last = "", first = ""] = (get("N")[0] ?? "").split(";");
+    const tels = get("TEL");
+    const mobile = lines.find((l) => /^(item\d+\.)?TEL[^:]*(CELL|MOBILE)/i.test(l));
+    const phone = mobile ? mobile.slice(mobile.indexOf(":") + 1).trim() : tels[0] ?? "";
+    const org = (get("ORG")[0] ?? "").split(";")[0] ?? "";
+    const name = fn || [first, last].filter(Boolean).join(" ") || org;
+    if (!name && !phone) continue;
+    rows.push([name, first, last, get("EMAIL")[0] ?? "", phone.replace(/^tel:/i, ""), org, get("TITLE")[0] ?? ""]);
+  }
+  return rows;
+}
+
+/** CRM exports split people's names: give the customers import one name column (person's name, else the company) */
+export function addFullName(grid: string[][]): string[][] {
+  const h = grid[0]!.map((x) => norm(x));
+  if (h.includes(norm("Full name (from file)"))) return grid;
+  const fi = h.findIndex((x) => ["first name", "firstname", "given name"].includes(x));
+  const li = h.findIndex((x) => ["last name", "surname", "lastname", "family name"].includes(x));
+  if (fi < 0 && li < 0) return grid;
+  const ci = h.findIndex((x) => ["company", "company name", "organization 1 - name", "organisation", "organization", "account name"].includes(x));
+  return grid.map((r, i) => i === 0 ? [...r, "Full name (from file)"]
+    : [...r, [r[fi] ?? "", r[li] ?? ""].map((v) => (v ?? "").trim()).filter(Boolean).join(" ") || (ci >= 0 ? (r[ci] ?? "").trim() : "")]);
 }

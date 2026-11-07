@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getContext } from "@/lib/context";
 import { bool, cleanError, done, fail, num, str } from "@/lib/forms";
+import { resolveAccount } from "@/lib/accounts";
 import { FINANCE_DOCS } from "@/lib/finance";
 
 async function seller(back: string) {
@@ -16,7 +17,7 @@ export async function createApplication(fd: FormData) {
   const back = "/sales/finance/new";
   const ctx = await seller(back);
   const orderId = str(fd, "order_id");
-  let accountId = str(fd, "account_id");
+  let accountId = str(fd, "order_id") ? null : await resolveAccount(ctx, fd, back);
   let unitId = str(fd, "unit_id");
   let price: number | null = null;
   let deposit = 0;

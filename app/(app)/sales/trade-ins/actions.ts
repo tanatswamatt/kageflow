@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getContext } from "@/lib/context";
 import { bool, cleanError, done, fail, num, str } from "@/lib/forms";
+import { resolveAccount } from "@/lib/accounts";
 
 function fields(fd: FormData) {
   const year = num(fd, "year");
@@ -23,8 +24,8 @@ export async function createTradeIn(fd: FormData) {
   const back = "/sales/trade-ins/new";
   const ctx = await getContext();
   if (!ctx.can("sales.write")) fail(back, "Your role can't record trade-ins");
-  let accountId = str(fd, "account_id");
   const orderId = str(fd, "order_id");
+  let accountId = orderId ? null : await resolveAccount(ctx, fd, back);
   if (orderId) {
     const { data: o } = await ctx.supabase.from("sales_docs").select("account_id").eq("id", orderId).eq("company_id", ctx.companyId).maybeSingle();
     if (!o) fail(back, "Order not found");

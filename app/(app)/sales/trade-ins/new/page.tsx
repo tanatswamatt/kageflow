@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Field, Notice, PageHeader, Panel, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { TradeInFields } from "@/components/finance/trade-in-fields";
+import { AccountPicker, type PickerAccount } from "@/components/crm/account-picker";
 import { getContext } from "@/lib/context";
 import { fail } from "@/lib/forms";
 import { createTradeIn } from "../actions";
@@ -14,7 +15,7 @@ export default async function NewTradeInPage({ searchParams }: { searchParams: P
   if (!ctx.can("sales.write")) fail("/sales/trade-ins", "Your role can't record trade-ins");
   const [{ data: orders }, { data: accounts }] = await Promise.all([
     ctx.supabase.from("sales_docs").select("id, number, crm_accounts(name)").eq("company_id", ctx.companyId).eq("doc_type", "order").eq("status", "open").order("created_at", { ascending: false }).limit(200),
-    ctx.supabase.from("crm_accounts").select("id, name").eq("company_id", ctx.companyId).in("kind", ["customer", "prospect"]).order("name").limit(2000),
+    ctx.supabase.from("crm_accounts").select("id, name, email, phone").eq("company_id", ctx.companyId).in("kind", ["customer", "prospect"]).order("name").limit(2000),
   ]);
   return (
     <>
@@ -30,12 +31,7 @@ export default async function NewTradeInPage({ searchParams }: { searchParams: P
                 {((orders ?? []) as unknown as { id: string; number: string | null; crm_accounts: { name: string } | null }[]).map((o) => <option key={o.id} value={o.id}>{o.number} · {o.crm_accounts?.name}</option>)}
               </Select>
             </Field>
-            <Field label="Or customer">
-              <Select name="account_id" defaultValue={sp.account ?? ""}>
-                <option value="">Choose…</option>
-                {((accounts ?? []) as { id: string; name: string }[]).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </Select>
-            </Field>
+            <AccountPicker accounts={(accounts ?? []) as PickerAccount[]} defaultValue={sp.account} label="Or customer" noun="customer" />
           </div>
           <TradeInFields vatVendor={!!ctx.company.vat_no?.trim()} currency={ctx.company.base_currency} />
           <div><SubmitButton>Save trade-in offer</SubmitButton></div>

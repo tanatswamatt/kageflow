@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getContext } from "@/lib/context";
 import { bool, cleanError, done, fail, num, str } from "@/lib/forms";
+import { resolveAccount } from "@/lib/accounts";
 import type { AccountKind, ActivityType, ConsentBasis, LeadSource, LeadStatus } from "@/lib/types";
 
 async function crm(back: string) {
@@ -217,10 +218,11 @@ export async function deleteContact(fd: FormData) {
 export async function createDeal(fd: FormData) {
   const back = str(fd, "back") ?? "/crm/deals/new";
   const ctx = await crm(back);
+  if (!str(fd, "name")) fail(back, "Deal name is required");
   const row = {
     company_id: ctx.companyId,
     name: str(fd, "name"),
-    account_id: str(fd, "account_id"),
+    account_id: await resolveAccount(ctx, fd, back),
     contact_id: str(fd, "contact_id"),
     stage_id: str(fd, "stage_id"),
     value: num(fd, "value") ?? 0,

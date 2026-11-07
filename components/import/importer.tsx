@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { buttonClass } from "@/components/ui";
-import { IMPORTS, autoMap, parseCsv, type ImportType } from "@/lib/import-spec";
+import { IMPORTS, addFullName, autoMap, parseCsv, parseVcf, type ImportType } from "@/lib/import-spec";
 import type { ImportResult, RowMatch } from "@/app/(app)/settings/import/actions";
 
 type Action = "create" | "update" | "skip";
@@ -42,13 +42,21 @@ export function Importer({
     setResult(null);
     if (!file) return;
     if (file.size > 2_000_000) return setProblem("That file is over 2 MB. Split it into smaller files.");
-    const g = parseCsv(await file.text());
+    const text = await file.text();
+    const isVcf = /\.vcf$/i.test(file.name) || /^\s*BEGIN:VCARD/i.test(text);
+    if (isVcf && type !== "customers" && type !== "contacts") return setProblem("Contact files (.vcf) import as customers or contacts.");
+    let g = isVcf ? parseVcf(text) : parseCsv(text);
+    if (type === "customers" && g.length > 1) g = addFullName(g);
     if (g.length < 2) return setProblem("The file needs a header row and at least one data row.");
     if (g.length - 1 > 2000) return setProblem("Import up to 2 000 rows at a time.");
     const h = g[0]!.map((x) => x.trim());
     setHeaders(h);
     setGrid(g.slice(1));
-    setMap(autoMap(h, spec.columns));
+    const m = autoMap(h, spec.columns);
+    // a person's full name beats the company column when the file has both
+    const full = h.indexOf("Full name (from file)");
+    if (type === "customers" && full >= 0) m.name = full;
+    setMap(m);
   };
 
   // rows keyed by Kageflow's column names, using the chosen mapping
@@ -98,10 +106,10 @@ export function Importer({
         </label>
         <a href={template} download={`kageflow-${type}-template.csv`} className={buttonClass("secondary", "sm")}>Download template</a>
       </div>
-      <p className="text-ink-soft">{spec.help} Exports from Sage, Pastel, VMG or Excel work as they are: Kageflow matches the columns for you and you can correct it below.</p>
+      <p className="text-ink-soft">{spec.help} Exports from Sage, Pastel, VMG, Excel, HubSpot, Zoho, Pipedrive, Salesforce, Google Contacts or Outlook work as they are, and so do contact files (.vcf) from a phone. Kageflow matches the columns for you, finds people already in Kageflow, and you can correct it below.</p>
       <label className="flex flex-col gap-1.5">
         <span className="text-[13px] font-medium text-ink-soft">CSV file (comma or semicolon separated, saved from Excel as CSV UTF-8)</span>
-        <input key={type} type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm file:mr-3 file:rounded-[var(--radius-control)] file:border file:border-line-strong file:bg-surface file:px-3 file:py-1.5 file:text-sm" />
+        <input key={type} type="file" accept=".csv,text/csv,.vcf,text/vcard,text/x-vcard" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm file:mr-3 file:rounded-[var(--radius-control)] file:border file:border-line-strong file:bg-surface file:px-3 file:py-1.5 file:text-sm" />
       </label>
       {problem && <p role="alert" className="text-ember-700">{problem}</p>}
 

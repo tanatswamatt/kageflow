@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Field, Input, Notice, PageHeader, Panel, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { OwnerSelect } from "@/components/crm/owner-select";
+import { AccountPicker, type PickerAccount } from "@/components/crm/account-picker";
 import { getContext } from "@/lib/context";
 import { CURRENCIES } from "@/lib/types";
 import { getMembers } from "@/lib/members";
@@ -17,12 +18,12 @@ export default async function NewDealPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const ctx = await getContext();
   const [{ data: accounts }, { data: contacts }, { data: stages }, members] = await Promise.all([
-    ctx.supabase.from("crm_accounts").select("id, name").eq("company_id", ctx.companyId).order("name").limit(1000),
+    ctx.supabase.from("crm_accounts").select("id, name, email, phone").eq("company_id", ctx.companyId).order("name").limit(3000),
     ctx.supabase.from("crm_contacts").select("id, first_name, last_name, account_id").eq("company_id", ctx.companyId).order("first_name").limit(1000),
     ctx.supabase.from("crm_pipeline_stages").select("*").eq("company_id", ctx.companyId).eq("is_won", false).eq("is_lost", false).order("position"),
     getMembers(),
   ]);
-  const accountList = (accounts ?? []) as { id: string; name: string }[];
+  const accountList = (accounts ?? []) as PickerAccount[];
   const accountName = new Map(accountList.map((a) => [a.id, a.name]));
   const back = `/crm/deals/new${params.account ? `?account=${params.account}` : ""}`;
 
@@ -31,20 +32,13 @@ export default async function NewDealPage({ searchParams }: { searchParams: Prom
       <PageHeader title="New deal" back={{ href: "/crm/deals", label: "Deals" }} />
       <Notice params={params} />
       <Panel className="max-w-3xl">
-        {accountList.length === 0 ? (
-          <p className="text-ink-soft">Create an account first. Deals always belong to an account.</p>
-        ) : (
+        {(
           <form action={createDeal} className="grid gap-4 sm:grid-cols-2">
             <input type="hidden" name="back" value={back} />
             <Field label="Deal name" className="sm:col-span-2">
               <Input name="name" required placeholder="3 x Land Cruiser 79 for Nairobi" />
             </Field>
-            <Field label="Account">
-              <Select name="account_id" defaultValue={params.account ?? ""} required>
-                <option value="" disabled>Choose an account</option>
-                {accountList.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </Select>
-            </Field>
+            <AccountPicker accounts={accountList} defaultValue={params.account} label="Customer or company" noun="customer" />
             <Field label="Main contact">
               <Select name="contact_id" defaultValue="">
                 <option value="">None</option>
