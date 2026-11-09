@@ -8,7 +8,7 @@ import { getContext } from "@/lib/context";
 import { date, dateTime, moneyFor, today } from "@/lib/format";
 import { amountToFinance, banksFor, FINANCE_DOCS, FINANCE_LABEL, FINANCE_TONE, type FinanceApplication, type FinanceSubmission } from "@/lib/finance";
 import { loadBankAccounts } from "@/lib/purchases-data";
-import { addSubmission, recordPayout, saveApplication, setApplicationCancelled, updateSubmission } from "../actions";
+import { addSubmission, createOrderFromApplication, postDic, recordPayout, saveApplication, setApplicationCancelled, undoDic, updateSubmission } from "../actions";
 
 export const metadata: Metadata = { title: "Finance application" };
 
@@ -28,10 +28,14 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
     sales_docs: { id: string; number: string | null; total: number } | null;
     inventory_units: { id: string; stock_no: string | null; make: string | null; model: string | null; year: number | null; serial_no: string } | null;
   };
-  const [{ data: subs }, banks] = await Promise.all([
+  const [{ data: subs }, banks, { data: carData }] = await Promise.all([
     ctx.supabase.from("finance_submissions").select("*").eq("application_id", id).order("submitted_at"),
     ctx.can("payments.write") ? loadBankAccounts(ctx) : Promise.resolve([]),
+    app.order_id ? Promise.resolve({ data: [] }) : ctx.supabase.from("inventory_units").select("id, stock_no, make, model, year").eq("company_id", ctx.companyId).in("status", ["in_stock", "in_transit", "listed", "on_order"]).order("created_at", { ascending: false }).limit(1000),
   ]);
+  const cars = ((carData ?? []) as { id: string; stock_no: string | null; make: string | null; model: string | null; year: number | null }[]);
+  const iu = app.inventory_units;
+  if (iu && !cars.some((c) => c.id === iu.id)) cars.unshift({ id: iu.id, stock_no: iu.stock_no, make: iu.make, model: iu.model, year: iu.year });
   const submissions = (subs ?? []) as FinanceSubmission[];
   const toFinance = amountToFinance(app);
   const cancelled = app.status === "cancelled";
@@ -118,9 +122,36 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                   <div className="text-xs text-ink-faint">Sent {date(s.submitted_at.slice(0, 10))}{s.reference ? ` · ref ${s.reference}` : ""}</div>
                   {s.instalment != null && <div className="mt-1 text-sm">{money(s.approved_amount)} at {Number(s.rate)}% over {s.term_months} months: <strong>{money(s.instalment)}</strong> a month</div>}
                   {s.conditions && <div className="mt-1 text-xs text-ink-soft">{s.conditions}</div>}
-                  {s.dic_amount != null && Number(s.dic_amount) > 0 && <div className="mt-1 text-xs text-jade-700">Dealer commission {money(s.dic_amount)}</div>}
+                  {s.dic_amount != null && Number(s.dic_amount) > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-jade-700">DIC {money(s.dic_amount)} excl. VAT</span>
+                      {s.dic_received_journal_id ? <Badge tone="jade">Received {date(s.dic_received_on)}</Badge>
+                        : s.dic_journal_id ? <Badge tone="amber">In the books, waiting for {s.bank}</Badge>
+                        : <Badge tone="neutral">Not in the books yet</Badge>}
+                      {ctx.can("payments.write") && !s.dic_journal_id && ["paid_out", "contracted"].includes(s.status) && (
+                        <form action={postDic}><input type="hidden" name="id" value={s.id} /><input type="hidden" name="back" value={`/sales/finance/${app.id}`} /><SubmitButton size="sm" tone="secondary" pendingText="Posting…">Post DIC</SubmitButton></form>
+                      )}
+                      {ctx.can("payments.write") && s.dic_journal_id && !s.dic_received_journal_id && (
+                        <form action={undoDic}><input type="hidden" name="id" value={s.id} /><input type="hidden" name="back" value={`/sales/finance/${app.id}`} /><SubmitButton size="sm" tone="quiet" confirm="Reverse this DIC so you can correct it?" pendingText="…">Undo DIC</SubmitButton></form>
+                      )}
+                    </div>
+                  )}
                   {s.status === "paid_out" ? (
-                    <div className="mt-2 text-sm text-jade-700">Paid out {money(s.payout_amount)} on {date(s.payout_date)}</div>
+                    <>
+                      <div className="mt-2 text-sm text-jade-700">Paid out {money(s.payout_amount)} on {date(s.payout_date)}</div>
+                      {!s.dic_journal_id && ctx.can("payments.write") && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-[13px] font-medium text-shadow-700">{Number(s.dic_amount ?? 0) > 0 ? "Change the DIC" : "Add the DIC"}</summary>
+                          <form action={updateSubmission} className="mt-2 grid grid-cols-2 gap-2">
+                            <input type="hidden" name="id" value={s.id} /><input type="hidden" name="application_id" value={app.id} /><input type="hidden" name="status" value="paid_out" />
+                            <input type="hidden" name="approved_amount" value={n(s.approved_amount)} /><input type="hidden" name="rate" value={n(s.rate)} /><input type="hidden" name="term_months" value={n(s.term_months)} />
+                            <input type="hidden" name="instalment" value={n(s.instalment)} /><input type="hidden" name="balloon_amount" value={n(s.balloon_amount)} /><input type="hidden" name="reference" value={s.reference ?? ""} /><input type="hidden" name="conditions" value={s.conditions ?? ""} />
+                            <Field label={`DIC excl. VAT (${cur})`}><Input name="dic_amount" inputMode="decimal" defaultValue={n(s.dic_amount)} /></Field>
+                            <div className="flex items-end"><SubmitButton size="sm" tone="secondary">Save DIC</SubmitButton></div>
+                          </form>
+                        </details>
+                      )}
+                    </>
                   ) : !cancelled && (
                     <details className="mt-2">
                       <summary className="cursor-pointer text-[13px] font-medium text-shadow-700">Record their answer</summary>
@@ -132,7 +163,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                         <Field label="Term"><Input name="term_months" inputMode="numeric" defaultValue={n(s.term_months ?? app.term_months)} /></Field>
                         <Field label="Instalment"><Input name="instalment" inputMode="decimal" defaultValue={n(s.instalment)} /></Field>
                         <Field label={`Balloon (${cur})`}><Input name="balloon_amount" inputMode="decimal" defaultValue={n(s.balloon_amount)} /></Field>
-                        <Field label="Dealer commission (DIC, R)"><Input name="dic_amount" inputMode="decimal" defaultValue={n(s.dic_amount)} /></Field>
+                        <Field label={`DIC excl. VAT (${cur})`}><Input name="dic_amount" inputMode="decimal" defaultValue={n(s.dic_amount)} /></Field>
                         <Field label="Bank ref"><Input name="reference" defaultValue={s.reference ?? ""} /></Field>
                         <Field label="Conditions" className="col-span-2"><Input name="conditions" defaultValue={s.conditions ?? ""} placeholder="e.g. proof of income, 10% deposit" /></Field>
                         <div className="col-span-2"><SubmitButton size="sm">Save answer</SubmitButton></div>
@@ -173,9 +204,21 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
           <Panel title="Linked">
             <Dl items={[
               ["Customer", app.crm_accounts ? <Link key="c" className="hover:underline" href={`/crm/accounts/${app.crm_accounts.id}`}>{app.crm_accounts.name}</Link> : ""],
-              ["Order", app.sales_docs ? <Link key="o" className="hover:underline" href={`/sales/doc/${app.sales_docs.id}`}>{app.sales_docs.number}</Link> : "None"],
+              ["Order", app.sales_docs ? <Link key="o" className="hover:underline" href={`/sales/doc/${app.sales_docs.id}`}>{app.sales_docs.number}</Link> : "None yet: made when a bank approves"],
               ["Vehicle", v ? <Link key="v" className="hover:underline" href={`/inventory/units/${v.id}`}>{v.stock_no} {[v.make, v.model].filter(Boolean).join(" ")}</Link> : "None"],
             ]} />
+            {!app.order_id && !cancelled && (
+              <form action={createOrderFromApplication} className="mt-4 flex flex-col gap-2 border-t border-line pt-4">
+                <input type="hidden" name="application_id" value={app.id} />
+                <Field label="Create the order now" hint="Reserves the car at the purchase price. Happens by itself when a bank approves">
+                  <Select name="unit_id" defaultValue={app.unit_id ?? ""}>
+                    <option value="" disabled>Choose the car</option>
+                    {cars.map((c) => <option key={c.id} value={c.id}>{c.stock_no} · {[c.year, c.make, c.model].filter(Boolean).join(" ")}</option>)}
+                  </Select>
+                </Field>
+                <div><SubmitButton size="sm" tone="secondary" pendingText="Creating…">Create order</SubmitButton></div>
+              </form>
+            )}
             <form action={setApplicationCancelled} className="mt-4">
               <input type="hidden" name="id" value={app.id} /><input type="hidden" name="cancel" value={String(!cancelled)} />
               <SubmitButton tone="quiet" size="sm" confirm={cancelled ? undefined : "Cancel this application?"}>{cancelled ? "Reopen application" : "Cancel application"}</SubmitButton>

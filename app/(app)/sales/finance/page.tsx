@@ -26,7 +26,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader title="Finance applications" description="One application per buyer, sent to as many banks as you like. Track every answer and the payout in one place."
-        actions={<ButtonLink href="/sales/finance/new" tone="primary">New application</ButtonLink>} />
+        actions={<>{ctx.can("payments.write") && <ButtonLink href="/sales/finance/commission">Finance commission (DIC)</ButtonLink>}<ButtonLink href="/sales/finance/new" tone="primary">New application</ButtonLink></>} />
       <Notice params={sp} />
       <nav className="mb-4 flex flex-wrap gap-1">
         {VIEWS.map(([k, l]) => <Link key={k} href={`/sales/finance?v=${k}`} className={`rounded-full px-3 py-1 text-[13px] ${v === k ? "bg-shadow-800 text-white" : "text-ink-soft hover:bg-shadow-100"}`}>{l}</Link>)}

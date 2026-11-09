@@ -39,6 +39,7 @@ export type FinanceSubmission = {
   id: string; application_id: string; bank: string; reference: string | null; status: SubmissionStatus; submitted_at: string; decided_at: string | null;
   approved_amount: number | null; rate: number | null; term_months: number | null; balloon_amount: number | null; instalment: number | null;
   conditions: string | null; dic_amount: number | null; payout_amount: number | null; payout_date: string | null; payment_id: string | null;
+  dic_vat?: number | null; dic_journal_id?: string | null; dic_received_journal_id?: string | null; dic_received_on?: string | null; dic_reference?: string | null;
 };
 
 export type TradeIn = {

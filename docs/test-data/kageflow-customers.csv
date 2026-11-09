@@ -1,0 +1,36 @@
+name,kind,email,phone,vat_no,billing_address,city,country,payment_days
+Sipho Dlamini,customer,sipho.dlamini@example.com,+27 82 555 1000,,10 Main Road,Johannesburg,ZA,0
+Lerato Khumalo,customer,lerato.khumalo@example.com,+27 82 555 1001,,11 Main Road,Pretoria,ZA,0
+Thabo Mokoena,customer,thabo.mokoena@example.com,+27 82 555 1002,,12 Main Road,Durban,ZA,0
+Naledi Mahlangu,customer,naledi.mahlangu@example.com,+27 82 555 1003,,13 Main Road,Midrand,ZA,0
+Kagiso Molefe,customer,kagiso.molefe@example.com,+27 82 555 1004,,14 Main Road,Rustenburg,ZA,0
+Zanele Ndlovu,customer,zanele.ndlovu@example.com,+27 82 555 1005,,15 Main Road,Pietermaritzburg,ZA,0
+Pieter van der Merwe,customer,pieter.vandermerwe@example.com,+27 82 555 1006,,16 Main Road,Bloemfontein,ZA,0
+Annelie Botha,customer,annelie.botha@example.com,+27 82 555 1007,,17 Main Road,Centurion,ZA,0
+Rajesh Naidoo,customer,rajesh.naidoo@example.com,+27 82 555 1008,,18 Main Road,Durban,ZA,0
+Priya Pillay,customer,priya.pillay@example.com,+27 82 555 1009,,19 Main Road,Umhlanga,ZA,0
+Johan Pretorius,customer,johan.pretorius@example.com,+27 82 555 1010,,20 Main Road,Polokwane,ZA,0
+Ayanda Zulu,customer,ayanda.zulu@example.com,+27 82 555 1011,,21 Main Road,Soweto,ZA,0
+Mpho Sithole,customer,mpho.sithole@example.com,+27 82 555 1012,,22 Main Road,Mbombela,ZA,0
+Lindiwe Mthembu,customer,lindiwe.mthembu@example.com,+27 82 555 1013,,23 Main Road,East London,ZA,0
+Bongani Nkosi,customer,bongani.nkosi@example.com,+27 82 555 1014,,24 Main Road,Germiston,ZA,0
+Chantel Jacobs,customer,chantel.jacobs@example.com,+27 82 555 1015,,25 Main Road,Cape Town,ZA,0
+Farouk Patel,customer,farouk.patel@example.com,+27 82 555 1016,,26 Main Road,Lenasia,ZA,0
+Nomvula Shabalala,customer,nomvula.shabalala@example.com,+27 82 555 1017,,27 Main Road,Newcastle,ZA,0
+Tendai Moyo,customer,tendai.moyo@example.com,+263 77 555 1018,,28 Main Road,Harare,ZW,0
+Rudo Chikwanha,customer,rudo.chikwanha@example.com,+263 77 555 1019,,29 Main Road,Harare,ZW,0
+Tatenda Mupfumi,customer,tatenda.mupfumi@example.com,+263 77 555 1020,,30 Main Road,Bulawayo,ZW,0
+Kudzai Marufu,customer,kudzai.marufu@example.com,+263 77 555 1021,,31 Main Road,Mutare,ZW,0
+Chipo Ncube,customer,chipo.ncube@example.com,+263 77 555 1022,,32 Main Road,Bulawayo,ZW,0
+Wanjiru Kamau,customer,wanjiru.kamau@example.com,+254 700 555 123,,33 Main Road,Nairobi,KE,0
+Chanda Mulenga,customer,chanda.mulenga@example.com,+260 97 555 1024,,34 Main Road,Lusaka,ZM,0
+Grace Banda,customer,grace.banda@example.com,+265 99 555 1025,,35 Main Road,Lilongwe,MW,0
+Mokoena Motors (Pty) Ltd,customer,accounts@mokoena.example.com,+27 11 555 2000,4012345678,100 Industrial Avenue,Johannesburg,ZA,7
+Nairobi Fleet Ltd,customer,accounts@nairobi.example.com,+254 20 555 0100,,107 Industrial Avenue,Nairobi,KE,7
+Copperbelt Haulage Ltd,customer,accounts@copperbelt.example.com,+260 212 555 010,,114 Industrial Avenue,Kitwe,ZM,7
+Harare Car Exchange (Pvt) Ltd,customer,accounts@harare.example.com,+263 242 555 010,,121 Industrial Avenue,Harare,ZW,7
+Limpopo Agri Supplies CC,customer,accounts@limpopo.example.com,+27 11 555 2004,4987654321,128 Industrial Avenue,Polokwane,ZA,7
+Midrand Auto Traders,supplier,accounts@midrand.example.com,+27 11 555 2005,4123987650,135 Industrial Avenue,Midrand,ZA,30
+Joburg Auto Traders,supplier,accounts@joburg.example.com,+27 11 555 2006,4555123987,142 Industrial Avenue,Johannesburg,ZA,30
+Durban Port Clearing (Pty) Ltd,supplier,accounts@durban.example.com,+27 11 555 2007,4777888999,149 Industrial Avenue,Durban,ZA,30
+Beitbridge Transport Services,supplier,accounts@beitbridge.example.com,+27 11 555 2008,,156 Industrial Avenue,Musina,ZA,30

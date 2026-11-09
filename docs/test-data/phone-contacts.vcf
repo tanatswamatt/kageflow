@@ -1,0 +1,26 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Mkhize;Nokuthula;;;
+FN:Nokuthula Mkhize
+TEL;TYPE=CELL:+27 82 555 5100
+EMAIL;TYPE=INTERNET:nokuthula@example.com
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Ngcobo;Andile;;;
+FN:Andile Ngcobo
+TEL;TYPE=CELL:+27 72 555 5101
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Chinembiri;Farai;;;
+FN:Farai Chinembiri
+TEL;TYPE=CELL:+263 77 555 5102
+EMAIL;TYPE=INTERNET:farai@example.com
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Dlamini;Sipho;;;
+FN:Sipho Dlamini
+TEL;TYPE=CELL:082 555 1000
+END:VCARD
