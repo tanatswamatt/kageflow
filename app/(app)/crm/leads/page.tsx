@@ -100,7 +100,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                     </Link>
                     {personName(l) && l.company_name && <div className="text-xs text-ink-faint">{l.company_name}</div>}
                   </Td>
-                  <Td className="max-w-64 truncate text-ink-soft">{l.interest}</Td>
+                  <Td className="max-w-64 truncate text-ink-soft">{l.interest}{l.listing_url && <a href={l.listing_url} target="_blank" rel="noopener noreferrer" className="ml-1.5 text-[12px] font-medium text-shadow-700 hover:underline">{l.listing_site ?? "Listing"} ↗</a>}</Td>
                   <Td>{SOURCE_LABEL[l.source] ?? label(l.source)}</Td>
                   <Td><Badge tone={leadTone[l.status]}>{label(l.status)}</Badge></Td>
                   <Td className="num">{l.estimated_value ? money(l.estimated_value, l.currency) : ""}</Td>

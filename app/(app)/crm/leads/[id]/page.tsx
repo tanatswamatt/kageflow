@@ -76,6 +76,19 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
             </form>
           </Panel>
 
+          {lead.listing_url && (
+            <Panel title={`The car they sent from ${lead.listing_site ?? "a listing site"}`}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium">{lead.interest ?? "Car listing"}</div>
+                  <div className="truncate text-[13px] text-ink-faint">{lead.listing_url}</div>
+                </div>
+                <a href={lead.listing_url} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-[var(--radius-control)] border border-line-strong px-3 py-1.5 text-sm font-medium hover:bg-paper">Open the listing</a>
+              </div>
+              <p className="mt-3 text-[13px] text-ink-soft">Check the price and the seller, then contact the seller. When you agree to buy it, list it under Stock, List a supplier&apos;s car, so it can be inspected, bought and invoiced to this customer.</p>
+            </Panel>
+          )}
+
           {(wa.messages.length > 0 || phoneDigits.length >= 9) && (
             <WhatsAppPanel leadId={lead.id} back={back} canWrite={canWrite} phoneDigits={phoneDigits} {...wa} />
           )}

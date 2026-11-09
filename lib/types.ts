@@ -104,6 +104,8 @@ export type Lead = {
   converted_at: string | null;
   created_at: string;
   unit_id?: string | null;
+  listing_url?: string | null;
+  listing_site?: string | null;
 };
 
 export type Deal = {
