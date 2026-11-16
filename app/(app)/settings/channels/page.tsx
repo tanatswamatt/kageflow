@@ -4,6 +4,7 @@ import { Badge, Field, Input, Notice, PageHeader, Panel, Select, Textarea } from
 import { SubmitButton } from "@/components/submit-button";
 import { CopyField } from "@/components/copy-field";
 import { getContext } from "@/lib/context";
+import { adminClient } from "@/lib/supabase/admin";
 import { dateTime } from "@/lib/format";
 import type { LeadChannel, ListingFeed } from "@/lib/types";
 import { addFeed, addLeadChannel, loadTemplates, removeFeed, removeLeadChannel, saveWhatsApp, toggleFeed, toggleLeadChannel } from "./actions";
@@ -16,15 +17,22 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const ctx = await getContext();
   if (!ctx.can("company.manage")) return <Panel><p className="text-ink-soft">Only owners and admins can manage listings and lead channels.</p></Panel>;
-  const [{ data: feedData }, { data: chData }, { count: published }] = await Promise.all([
+  const sa = adminClient();
+  const [{ data: feedData }, { data: chData }, { count: published }, { data: secretData }] = await Promise.all([
     ctx.supabase.from("listing_feeds").select("*").eq("company_id", ctx.companyId).order("created_at"),
-    ctx.supabase.from("lead_channels").select("*").eq("company_id", ctx.companyId).order("created_at"),
+    ctx.supabase.from("lead_channels").select("id,company_id,kind,name,token,is_active,phone_number_id,display_phone,verify_token,waba_id,auto_reply,assign_mode,last_received_at,received_count,created_at").eq("company_id", ctx.companyId).order("created_at"),
     ctx.supabase.from("inventory_units").select("id", { count: "exact", head: true }).eq("company_id", ctx.companyId).eq("is_published", true),
+    sa ? sa.from("lead_channels").select("id,access_token,app_secret").eq("company_id", ctx.companyId).eq("kind", "whatsapp") : Promise.resolve({ data: [] }),
   ]);
   const { data: tplData } = await ctx.supabase.from("whatsapp_templates").select("channel_id, name, language, status, category, usable, body").eq("company_id", ctx.companyId).order("name");
   const templates = (tplData ?? []) as { channel_id: string; name: string; language: string; status: string; category: string | null; usable: boolean; body: string }[];
   const feeds = (feedData ?? []) as ListingFeed[];
-  const channels = (chData ?? []) as LeadChannel[];
+  const secrets = new Map((secretData ?? []).map((c) => [c.id, { has_access_token: Boolean(c.access_token), has_app_secret: Boolean(c.app_secret) }]));
+  const channels = (chData ?? []).map((channel) => ({
+    ...channel,
+    has_access_token: secrets.get(channel.id)?.has_access_token ?? false,
+    has_app_secret: secrets.get(channel.id)?.has_app_secret ?? false,
+  })) as (Omit<LeadChannel, "access_token" | "app_secret"> & { has_access_token: boolean; has_app_secret: boolean })[];
   const email = channels.filter((c) => c.kind === "email");
   const whatsapp = channels.filter((c) => c.kind === "whatsapp");
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? (await headers()).get("origin") ?? "https://app.kageflow.co.za";
@@ -117,7 +125,7 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="font-medium">{c.display_phone || c.name}</div>
                   <div className="flex items-center gap-1.5">
-                    <Badge tone={c.access_token && c.phone_number_id ? "jade" : "amber"}>{c.access_token && c.phone_number_id ? `${c.received_count} messages` : "Setup not finished"}</Badge>
+                    <Badge tone={c.has_access_token && c.phone_number_id ? "jade" : "amber"}>{c.has_access_token && c.phone_number_id ? `${c.received_count} messages` : "Setup not finished"}</Badge>
                     <form action={toggleLeadChannel}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="active" value={String(!c.is_active)} /><SubmitButton size="sm" tone="quiet" pendingText="…">{c.is_active ? "Pause" : "Switch on"}</SubmitButton></form>
                     <form action={removeLeadChannel}><input type="hidden" name="id" value={c.id} /><SubmitButton size="sm" tone="quiet" confirm="Disconnect WhatsApp?" pendingText="…">Remove</SubmitButton></form>
                   </div>
@@ -130,8 +138,8 @@ export default async function ChannelsPage({ searchParams }: { searchParams: Pro
                   <input type="hidden" name="id" value={c.id} />
                   <Field label="Business WhatsApp number"><Input name="display_phone" defaultValue={c.display_phone ?? ""} placeholder={ctx.rules.phonePlaceholder} /></Field>
                   <Field label="Phone number ID"><Input name="phone_number_id" defaultValue={c.phone_number_id ?? ""} inputMode="numeric" /></Field>
-                  <Field label="Permanent access token" hint={c.access_token ? "Saved. Leave blank to keep it." : "From a Meta system user"}><Input name="access_token" type="password" autoComplete="off" /></Field>
-                  <Field label="App secret" hint={c.app_secret ? "Saved. Leave blank to keep it." : "Required: messages are refused until it is saved. Meta app, Settings, Basic"}><Input name="app_secret" type="password" autoComplete="off" /></Field>
+                  <Field label="Permanent access token" hint={c.has_access_token ? "Saved. Leave blank to keep it." : "From a Meta system user"}><Input name="access_token" type="password" autoComplete="off" /></Field>
+                  <Field label="App secret" hint={c.has_app_secret ? "Saved. Leave blank to keep it." : "Required: messages are refused until it is saved. Meta app, Settings, Basic"}><Input name="app_secret" type="password" autoComplete="off" /></Field>
                   <Field label="WhatsApp Business Account ID" hint="Same API setup page. Needed for templates"><Input name="waba_id" defaultValue={c.waba_id ?? ""} inputMode="numeric" /></Field>
                   <Field label="New WhatsApp leads go to">
                     <Select name="assign_mode" defaultValue={c.assign_mode ?? "none"}>

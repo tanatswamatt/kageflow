@@ -64,7 +64,9 @@ export async function saveWhatsApp(fd: FormData) {
   if (token) patch.access_token = token;
   if (secret) patch.app_secret = secret;
   if (patch.phone_number_id && !/^\d{6,20}$/.test(patch.phone_number_id)) fail(BACK, "The phone number ID is the long number from Meta's API setup page, digits only");
-  const { error } = await ctx.supabase.from("lead_channels").update(patch).eq("id", str(fd, "id")).eq("company_id", ctx.companyId).eq("kind", "whatsapp");
+  const sa = adminClient();
+  if (!sa) fail(BACK, "Kageflow's server is missing its service key (SUPABASE_SERVICE_ROLE_KEY), so it can't save WhatsApp credentials");
+  const { error } = await sa.from("lead_channels").update(patch).eq("id", str(fd, "id")).eq("company_id", ctx.companyId).eq("kind", "whatsapp");
   if (error) fail(BACK, cleanError(error.message));
   done(BACK, "WhatsApp details saved");
 }

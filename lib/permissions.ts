@@ -13,6 +13,10 @@ const RULES = {
   "inventory.costs": ["owner", "admin", "accountant"],
   "purchases.write": ["owner", "admin", "accountant"],
   "banking.write": ["owner", "admin", "accountant"],
+  "exports.write": ["owner", "admin", "accountant", "sales"],
+  "exports.review": ["owner", "admin", "accountant"],
+  "exports.approve": ["owner", "admin"],
+  "exports.release": ["owner", "admin"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof RULES;

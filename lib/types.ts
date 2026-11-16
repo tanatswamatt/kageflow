@@ -381,3 +381,164 @@ export type Allocation = { id: string; payment_id: string; invoice_id: string; a
 
 export type ApiKey = { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null };
 export type WebhookEndpoint = { id: string; url: string; description: string | null; secret: string; events: string[]; is_active: boolean; created_at: string };
+
+// ---------- export readiness ----------
+export type ExportCaseStatus = "draft" | "in_review" | "blocked" | "ready_for_approval" | "approved" | "released" | "cancelled";
+export type ExportCheckResult = "pass" | "missing" | "failed" | "needs_review";
+export type ExportDocumentKind =
+  | "commercial_invoice" | "bill_of_lading" | "road_freight_waybill" | "export_permit"
+  | "customs_declaration" | "certificate_of_origin" | "proof_of_title" | "proof_of_export"
+  | "payment_proof" | "other";
+export type ExportDocumentStatus = "uploaded" | "in_review" | "accepted" | "rejected";
+export type ExportIncoterm = "EXW" | "FCA" | "FAS" | "FOB" | "CFR" | "CIF" | "CPT" | "CIP" | "DAP" | "DPU" | "DDP";
+
+export type ExportRuleset = {
+  id: string;
+  company_id: string;
+  corridor_code: string;
+  origin_country: string;
+  destination_country: string;
+  version: number;
+  status: "draft" | "published" | "retired";
+  title: string;
+  source_title: string;
+  source_url: string | null;
+  effective_from: string;
+  notes: string | null;
+  published_by: string | null;
+  published_at: string | null;
+};
+
+export type ExportRulesetItem = {
+  id: string;
+  ruleset_id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  category: "party" | "vehicle" | "finance_title" | "documents" | "payment" | "evidence";
+  blocking: boolean;
+  evidence_hint: string | null;
+  params: Record<string, unknown>;
+  position: number;
+};
+
+export type ExportCase = {
+  id: string;
+  company_id: string;
+  case_no: string | null;
+  status: ExportCaseStatus;
+  account_id: string;
+  contact_id: string | null;
+  unit_id: string;
+  order_id: string;
+  ruleset_id: string;
+  origin_country: string;
+  destination_country: string;
+  route: string;
+  incoterm: ExportIncoterm;
+  incoterm_place: string | null;
+  planned_departure: string | null;
+  planned_arrival: string | null;
+  destination_requirements: string | null;
+  notes: string | null;
+  owner_id: string | null;
+  proof_of_export_due_date: string | null;
+  proof_of_export_owner: string | null;
+  last_evaluated_at: string | null;
+  last_evaluated_by: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  released_at: string | null;
+  released_by: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type ExportCaseCheck = {
+  id: string;
+  case_id: string;
+  ruleset_item_id: string;
+  rule_code: string;
+  rule_title: string;
+  blocking: boolean;
+  result: ExportCheckResult;
+  evidence: Record<string, unknown>;
+  note: string | null;
+  checked_by: string | null;
+  checked_at: string;
+};
+
+export type ExportDocument = {
+  id: string;
+  company_id: string;
+  case_id: string;
+  doc_type: ExportDocumentKind;
+  label: string | null;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+  review_status: ExportDocumentStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  extracted_fields: Record<string, unknown>;
+  confirmed_fields: Record<string, unknown>;
+  extraction_source: string | null;
+  extraction_at: string | null;
+};
+
+export type ExportReviewItem = {
+  id: string;
+  case_id: string;
+  document_id: string | null;
+  field: string;
+  expected: string | null;
+  found: string | null;
+  severity: "blocking" | "warning";
+  status: "open" | "resolved" | "dismissed";
+  resolution_note: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+};
+
+export type ExportApproval = {
+  id: string;
+  case_id: string;
+  decision: "approved" | "rejected";
+  approved_by: string;
+  approved_at: string;
+  ruleset_id: string;
+  checklist_version: number;
+  checklist_snapshot: Record<string, unknown>;
+  note: string | null;
+};
+
+export type ExportRelease = {
+  id: string;
+  case_id: string;
+  approval_id: string;
+  released_by: string;
+  released_at: string;
+  method: string;
+  note: string | null;
+};
+
+export type ExportAiSuggestion = {
+  id: string;
+  case_id: string;
+  document_id: string | null;
+  kind: string;
+  model: string;
+  prompt_version: string | null;
+  input_summary: Record<string, unknown>;
+  output: Record<string, unknown>;
+  status: "proposed" | "accepted" | "rejected" | "failed";
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  created_at: string;
+};

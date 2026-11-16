@@ -246,6 +246,7 @@ export default async function SalesDocPage({ params, searchParams }: { params: P
                   <>
                     {convertButton("invoice", "Create invoice", "primary")}
                     {canPay && <ButtonLink size="sm" href={`/sales/payments/new?account=${doc.account_id}&order=${id}`}>Record deposit</ButtonLink>}
+                    {ctx.can("exports.write") && carLines.length > 0 && <ButtonLink size="sm" href={`/exports/new?order=${id}`}>Start export case</ButtonLink>}
                     {statusButton("cancelled", "Cancel order", "danger", "Cancel this order? Reserved vehicles go back to stock.")}
                   </>
                 )}
