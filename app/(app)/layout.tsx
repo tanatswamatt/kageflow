@@ -115,7 +115,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="px-3 text-xs text-shadow-300">{label(ctx.role)}</div>
         </div>
         {ctx.can("sales.write") && (
-          <a href="/sales/new?type=invoice" className="mx-1 rounded-[var(--radius-control)] bg-jade-700 px-3 py-2 text-center text-[14px] font-medium text-white hover:bg-jade-600">
+          <a href="/sales/new?type=invoice" className="mx-1 rounded-[var(--radius-control)] bg-[#d94335] px-3 py-2 text-center text-[14px] font-medium text-white hover:bg-[#b93227]">
             New invoice
           </a>
         )}

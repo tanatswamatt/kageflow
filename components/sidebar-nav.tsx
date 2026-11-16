@@ -24,7 +24,7 @@ export function SidebarNav({ groups }: { groups: NavGroup[] }) {
                       active ? "bg-shadow-700 font-medium text-white" : "text-shadow-100/85 hover:bg-shadow-800 hover:text-white"
                     }`}
                   >
-                    {active && <span className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full bg-jade-600" />}
+                    {active && <span className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full bg-[#d94335]" />}
                     {item.label}
                   </Link>
                 </li>

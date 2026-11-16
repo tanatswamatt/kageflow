@@ -4,23 +4,23 @@
 @import "@fontsource/ibm-plex-sans/600.css";
 @import "@fontsource/ibm-plex-sans/700.css";
 
-/* Kageflow tokens: indigo "shadow" chrome, cool paper canvas, jade for money actions */
+/* Kageflow brand tokens. Positive accounting states keep their separate jade semantic. */
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink: #1a1d2e;
-  --color-ink-soft: #4a4f66;
-  --color-ink-faint: #7c8197;
-  --color-paper: #f5f6f9;
+  --color-ink: #17191b;
+  --color-ink-soft: #4f5558;
+  --color-ink-faint: #777d80;
+  --color-paper: #f3f0e9;
   --color-surface: #ffffff;
-  --color-line: #e2e4ec;
-  --color-line-strong: #c9ccd8;
+  --color-line: #dfdcd5;
+  --color-line-strong: #b9b5ac;
 
-  --color-shadow-900: #161a33;
-  --color-shadow-800: #1e2346;
-  --color-shadow-700: #2a3060;
-  --color-shadow-300: #a9aee0;
-  --color-shadow-100: #e8e9f7;
+  --color-shadow-900: #17191b;
+  --color-shadow-800: #242729;
+  --color-shadow-700: #3a3e40;
+  --color-shadow-300: #aaa69e;
+  --color-shadow-100: #e8e4dc;
 
   --color-jade-700: #0b6b5f;
   --color-jade-600: #0f7f71;
@@ -31,8 +31,8 @@
   --color-amber-700: #94600a;
   --color-amber-50: #fbf3e2;
 
-  --radius-control: 6px;
-  --radius-panel: 10px;
+  --radius-control: 5px;
+  --radius-panel: 8px;
 }
 
 @layer base {
@@ -42,13 +42,14 @@
     font-feature-settings: "tnum" 1;
     -webkit-font-smoothing: antialiased;
   }
+  body { background: var(--color-paper); }
   body {
     font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.5;
   }
   :focus-visible {
-    outline: 2px solid var(--color-shadow-700);
+    outline: 2px solid #d94335;
     outline-offset: 2px;
   }
   h1, h2, h3 {

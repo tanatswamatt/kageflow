@@ -8,7 +8,7 @@ function cx(...parts: (string | false | null | undefined)[]) {
 type Tone = "primary" | "secondary" | "quiet" | "danger";
 
 const buttonTones: Record<Tone, string> = {
-  primary: "bg-jade-700 text-white hover:bg-jade-600 border-transparent",
+  primary: "bg-[#d94335] text-white hover:bg-[#b93227] border-transparent",
   secondary: "bg-surface text-ink border-line-strong hover:bg-paper",
   quiet: "bg-transparent text-ink-soft border-transparent hover:bg-shadow-100 hover:text-ink",
   danger: "bg-surface text-ember-700 border-line-strong hover:bg-ember-50",
