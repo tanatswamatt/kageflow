@@ -151,10 +151,24 @@ export async function deleteJournal(fd: FormData) {
 export async function createPeriod(fd: FormData) {
   const back = "/accounting/periods";
   const ctx = await ledger(back);
-  const row = { company_id: ctx.companyId, name: str(fd, "name"), start_date: str(fd, "start_date"), end_date: str(fd, "end_date") };
+  const name = str(fd, "name");
+  const startDate = str(fd, "start_date");
+  const endDate = str(fd, "end_date");
+  const validDate = (value: string | null) => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  };
+  const row = { company_id: ctx.companyId, name, start_date: startDate, end_date: endDate };
   if (!row.name || !row.start_date || !row.end_date) fail(back, "Name, start and end date are required");
+  if (!validDate(row.start_date) || !validDate(row.end_date)) fail(back, "Enter valid start and end dates");
+  if (row.end_date < row.start_date) fail(back, "End date must be the same as or later than the start date");
   const { error } = await ctx.supabase.from("fiscal_periods").insert(row);
-  if (error) fail(back, error.message.includes("no_overlap") ? "That period overlaps an existing one" : cleanError(error.message));
+  if (error) {
+    if (error.message.includes("no_overlap")) fail(back, "That period overlaps an existing one");
+    if (error.message.includes("fiscal_periods_check")) fail(back, "End date must be the same as or later than the start date");
+    fail(back, cleanError(error.message));
+  }
   done(back, `Period ${row.name} added`);
 }
 
