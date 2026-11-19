@@ -193,13 +193,17 @@ export async function updateSubmission(fd: FormData) {
   const allowed = c0.status === "paid_out" ? ["paid_out"] : ["submitted", "approved", "counter_offer", "declined", "contracted", "withdrawn"];
   if (!status || !allowed.includes(status)) fail(back, "Pick the bank's answer");
   if (c0?.dic_journal_id && Number(c0.dic_amount ?? 0) !== Number(num(fd, "dic_amount") ?? 0)) fail(back, "The DIC is already in the books. Click Undo DIC first, then change it");
+  const rate = num(fd, "rate");
+  if (rate !== null && (rate < 0 || rate > 50)) fail(back, "Enter the bank's annual rate from 0% to 50%");
   const { error } = await ctx.supabase.from("finance_submissions").update({
     status, reference: str(fd, "reference"),
-    approved_amount: num(fd, "approved_amount"), rate: num(fd, "rate"), term_months: num(fd, "term_months"),
+    approved_amount: num(fd, "approved_amount"), rate, term_months: num(fd, "term_months"),
     balloon_amount: num(fd, "balloon_amount"), instalment: num(fd, "instalment"), conditions: str(fd, "conditions"), dic_amount: num(fd, "dic_amount"),
     ...(status === "paid_out" ? {} : { decided_at: status === "submitted" ? null : new Date().toISOString() }),
   }).eq("id", str(fd, "id")).eq("company_id", ctx.companyId);
-  if (error) fail(back, cleanError(error.message));
+  if (error) fail(back, error.message.includes("finance_submissions_rate_check")
+    ? "Enter the bank's annual rate from 0% to 50%"
+    : cleanError(error.message));
   revalidatePath("/sales/finance");
   // approved or signed: the deal is on, so the car gets an order (once)
   if (status === "approved" || status === "contracted") {

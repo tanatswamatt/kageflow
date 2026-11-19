@@ -12,6 +12,7 @@ export async function signIn(fd: FormData) {
   const password = str(fd, "password");
   const next = safeNext(str(fd, "next"));
   if (!email || !password) fail("/login", "Enter your email and password");
+  if (email.length > 254 || password.length > 1024) fail("/login", "Email or password is too long");
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -27,6 +28,8 @@ export async function signUp(fd: FormData) {
   const email = str(fd, "email");
   const password = str(fd, "password");
   if (!fullName || !email || !password) fail("/login?mode=signup", "Fill in your name, email and password");
+  if (fullName.length > 120) fail("/login?mode=signup", "Name must be 120 characters or fewer");
+  if (email.length > 254 || password.length > 1024) fail("/login?mode=signup", "Email or password is too long");
   if (password.length < 12) fail("/login?mode=signup", "Use at least 12 characters for your password");
 
   const origin = (await headers()).get("origin") ?? "http://localhost:3000";
@@ -51,6 +54,7 @@ export async function signUp(fd: FormData) {
 export async function requestReset(fd: FormData) {
   const email = str(fd, "email");
   if (!email) fail("/login?mode=forgot", "Enter your email");
+  if (email.length > 254) fail("/login?mode=forgot", "Email must be 254 characters or fewer");
   const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/callback?next=/reset-password` });
@@ -64,6 +68,7 @@ export async function setNewPassword(fd: FormData) {
   const password = str(fd, "password");
   const confirm = str(fd, "confirm");
   if (!password || password.length < 12) fail("/reset-password", "Use at least 12 characters");
+  if (password.length > 1024) fail("/reset-password", "Password must be 1,024 characters or fewer");
   if (password !== confirm) fail("/reset-password", "The two passwords don't match");
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });

@@ -1,5 +1,8 @@
 import { anonClient, apiError } from "@/lib/supabase/anon";
 import { parseLeadEmail } from "@/lib/lead-parse";
+import { readBoundedBody, RequestBodyTooLargeError } from "@/lib/bounded-body";
+
+const MAX_BODY_BYTES = 1024 * 1024;
 
 // Accepts forwarded emails from common inbound email services (Postmark, CloudMailin, Mailgun, SendGrid, Resend)
 // as JSON or form data, and turns each into a lead.
@@ -32,15 +35,34 @@ function header(o: Inbound, name: string): string | null {
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  let body: Inbound = {};
+  // A null prototype keeps user-controlled form keys such as "__proto__" inert.
+  let body: Inbound = Object.create(null) as Inbound;
   const type = request.headers.get("content-type") ?? "";
+  let bytes: Uint8Array;
   try {
-    if (type.includes("application/json")) {
-      body = (await request.json()) as Inbound;
-      if (body.data && typeof body.data === "object") body = { ...body, ...(body.data as Inbound) };
-    } else {
-      const fd = await request.formData();
+    bytes = await readBoundedBody(request, MAX_BODY_BYTES);
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return Response.json({ error: "Email payload is too large" }, { status: 413 });
+    return Response.json({ error: "Could not read the email" }, { status: 400 });
+  }
+
+  try {
+    if (/^application\/json(?:\s*;|$)/i.test(type)) {
+      const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return Response.json({ error: "Email payload must be a JSON object" }, { status: 400 });
+      }
+      body = Object.assign(Object.create(null) as Inbound, parsed);
+      if (body.data && typeof body.data === "object" && !Array.isArray(body.data)) {
+        body = Object.assign(Object.create(null) as Inbound, body, body.data);
+      }
+    } else if (/^(multipart\/form-data|application\/x-www-form-urlencoded)(?:;|$)/i.test(type)) {
+      const formBody = new ArrayBuffer(bytes.byteLength);
+      new Uint8Array(formBody).set(bytes);
+      const fd = await new Response(formBody, { headers: { "Content-Type": type } }).formData();
       fd.forEach((v, k) => { if (typeof v === "string") body[k] = v; });
+    } else {
+      return Response.json({ error: "Content-Type must be JSON or form data" }, { status: 415 });
     }
   } catch {
     return Response.json({ error: "Could not read the email" }, { status: 400 });

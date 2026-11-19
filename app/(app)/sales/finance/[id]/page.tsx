@@ -159,7 +159,7 @@ export default async function FinanceAppPage({ params, searchParams }: { params:
                         <input type="hidden" name="id" value={s.id} /><input type="hidden" name="application_id" value={app.id} />
                         <Field label="Answer" className="col-span-2"><Select name="status" defaultValue={s.status}>{(["submitted", "approved", "counter_offer", "declined", "contracted", "withdrawn"] as const).map((x) => <option key={x} value={x}>{FINANCE_LABEL[x]}</option>)}</Select></Field>
                         <Field label="Approved amount"><Input name="approved_amount" inputMode="decimal" defaultValue={n(s.approved_amount ?? toFinance)} /></Field>
-                        <Field label="Rate %"><Input name="rate" inputMode="decimal" defaultValue={n(s.rate)} /></Field>
+                        <Field label="Rate %" hint="Annual rate from 0% to 50%"><Input name="rate" type="number" min="0" max="50" step="0.001" inputMode="decimal" defaultValue={n(s.rate)} /></Field>
                         <Field label="Term"><Input name="term_months" inputMode="numeric" defaultValue={n(s.term_months ?? app.term_months)} /></Field>
                         <Field label="Instalment"><Input name="instalment" inputMode="decimal" defaultValue={n(s.instalment)} /></Field>
                         <Field label={`Balloon (${cur})`}><Input name="balloon_amount" inputMode="decimal" defaultValue={n(s.balloon_amount)} /></Field>

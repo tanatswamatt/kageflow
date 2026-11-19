@@ -1,4 +1,7 @@
 import { anonClient } from "@/lib/supabase/anon";
+import { readBoundedBody, RequestBodyTooLargeError } from "@/lib/bounded-body";
+
+const MAX_BODY_BYTES = 1024 * 1024;
 
 // Meta calls this once with a challenge when you save the webhook
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
@@ -13,7 +16,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
 // Incoming messages and delivery receipts. The signature is checked in the database against the app secret.
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const raw = await request.text();
+  let raw: string;
+  try {
+    raw = new TextDecoder("utf-8", { fatal: true }).decode(await readBoundedBody(request, MAX_BODY_BYTES));
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return new Response("Payload too large", { status: 413 });
+    return new Response("Invalid request body", { status: 400 });
+  }
   const { error } = await anonClient().rpc("whatsapp_inbound", { p_token: token, p_raw: raw, p_signature: request.headers.get("x-hub-signature-256") ?? "" });
   if (error) return new Response(error.code === "28000" ? "Forbidden" : "Error", { status: error.code === "28000" ? 403 : 500 });
   return new Response("OK", { status: 200 });

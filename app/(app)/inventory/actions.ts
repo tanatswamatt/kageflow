@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomBytes } from "node:crypto";
 import { getContext } from "@/lib/context";
 import { bool, cleanError, done, fail, num, str } from "@/lib/forms";
 import type { UnitCostKind, UnitStatus } from "@/lib/types";
@@ -114,7 +115,7 @@ export async function saveProduct(fd: FormData) {
     ...(id ? { is_active: bool(fd, "is_active") } : {}),
   };
   if (!row.name) fail(back, "Give the product a name");
-  if (!row.sku) row.sku = `${row.name.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24)}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+  if (!row.sku) row.sku = `${row.name.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24)}-${randomBytes(3).toString("hex").toUpperCase()}`;
   if (id) {
     const { error } = await ctx.supabase.from("products").update(row).eq("id", id).eq("company_id", ctx.companyId);
     if (error) fail(back, error.message.includes("duplicate") ? `Code ${row.sku} is already used` : cleanError(error.message));

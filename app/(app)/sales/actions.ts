@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomBytes } from "node:crypto";
 import { getContext } from "@/lib/context";
 import { cleanError, done, fail, num, str } from "@/lib/forms";
 import { DOC_LABEL } from "@/lib/sales";
@@ -297,7 +298,7 @@ type EditorLineInput = { product_id?: string; unit_id?: string; description?: st
 
 function skuFrom(name: string): string {
   const base = name.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24) || "ITEM";
-  return `${base}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  return `${base}-${randomBytes(3).toString("hex").toUpperCase()}`;
 }
 
 export async function saveDocument(_prev: { error?: string } | null, fd: FormData): Promise<{ error?: string }> {
