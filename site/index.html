@@ -330,6 +330,24 @@ footer a:hover { color: #fff; }
   .hero { padding-top: 56px; }
   .hero::before { background: linear-gradient(rgba(23,25,27,.91), rgba(23,25,27,.83)), url('/img/lot.jpg') center / cover; }
 }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+  .btn { transition: background-color .2s ease, border-color .2s ease, transform .25s cubic-bezier(.2,.7,.2,1); }
+  .btn:hover { transform: translateY(-2px); }
+  .hero::before { inset: -5% 0; transform: translate3d(0, var(--hero-drift, 0px), 0) scale(1.06); will-change: transform; }
+  .reveal { opacity: 0; transform: translate3d(0, 26px, 0); transition: opacity .72s cubic-bezier(.2,.7,.2,1), transform .72s cubic-bezier(.2,.7,.2,1); transition-delay: var(--reveal-delay, 0ms); }
+  .reveal.is-visible { opacity: 1; transform: translate3d(0, 0, 0); }
+  .hero .jacket.reveal { transform: translate3d(0, 32px, 0) scale(.985); }
+  .hero .jacket.reveal.is-visible { transform: translate3d(0, 0, 0) scale(1); }
+  .step-img { transition: transform .8s cubic-bezier(.2,.7,.2,1); }
+  .journey li:hover .step-img { transform: scale(1.025); }
+  .report-list > div, .export-steps > div { transition: padding-left .25s ease, background-color .25s ease; }
+  .report-list > div:hover, .export-steps > div:hover { padding-left: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .btn, .step-img, .report-list > div, .export-steps > div { transition: none !important; }
+}
 </style>
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://www.kageflow.co.za/#org", "name": "Kageflow", "url": "https://www.kageflow.co.za/", "logo": "https://www.kageflow.co.za/logo.png", "email": "info@kageflow.co.za", "parentOrganization": {"@type": "Organization", "name": "Pretan Technologies"}}, {"@type": "WebSite", "@id": "https://www.kageflow.co.za/#site", "url": "https://www.kageflow.co.za/", "name": "Kageflow", "inLanguage": "en-ZA", "publisher": {"@id": "https://www.kageflow.co.za/#org"}}, {"@type": "SoftwareApplication", "name": "Kageflow", "applicationCategory": "BusinessApplication", "applicationSubCategory": "Dealer management system", "operatingSystem": "Web browser", "url": "https://www.kageflow.co.za/", "description": "Dealer management software for Southern African car dealers: leads, stock, deals, finance applications, commission and VAT accounting in one system.", "areaServed": ["ZA", "ZW", "BW", "NA", "ZM", "MZ"], "publisher": {"@id": "https://www.kageflow.co.za/#org"}}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Kageflow?", "acceptedAnswer": {"@type": "Answer", "text": "Kageflow is dealer management software (a DMS) for car dealers in South Africa and neighbouring countries. Leads, stock, deals, bank finance applications, trade-ins, commission and full accounting with VAT run in one system, so every car shows its real profit."}}, {"@type": "Question", "name": "Can Kageflow replace VMG?", "acceptedAnswer": {"@type": "Answer", "text": "Kageflow covers leads, stock, deals, finance applications, trade-ins, commission and stock-takes, and adds full double-entry accounting with a VAT201 return, so you don't need a separate accounting package. Workshop job cards aren't in Kageflow yet, so dealers with their own workshop should ask us first."}}, {"@type": "Question", "name": "Can I bring my data across from Pastel, Sage, VMG or Excel?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Export a CSV from your current system and import it. Kageflow recognises the usual column names, matches customers on VAT number, email, phone or name and vehicles on VIN, and lets you choose to add, update or skip each row before anything is saved."}}, {"@type": "Question", "name": "How does Kageflow handle VAT on used cars?", "acceptedAnswer": {"@type": "Answer", "text": "VAT is worked out at 15%. When you buy a car from a private seller, Kageflow claims notional input VAT on it, including trade-ins, and your VAT201 figures come straight from the posted sales and purchases. Check your VAT treatment with your accountant as usual."}}, {"@type": "Question", "name": "Does it work with AutoTrader, Cars.co.za and WhatsApp?", "acceptedAnswer": {"@type": "Answer", "text": "Enquiries that portals send by email, and messages to your WhatsApp Business number, become leads in Kageflow, linked to the car the buyer asked about. Kageflow also gives you a stock feed for your own website. Sending stock straight to a portal depends on that portal's feed programme, so ask us about the portals you use."}}, {"@type": "Question", "name": "Do I need to install anything?", "acceptedAnswer": {"@type": "Answer", "text": "No. Kageflow runs in the browser on a phone, tablet or laptop. On Android phones you can scan the VIN barcode with the camera; on iPhones you type the VIN."}}, {"@type": "Question", "name": "Is customer data kept private under POPIA?", "acceptedAnswer": {"@type": "Answer", "text": "Kageflow records how and when each contact agreed to hear from you, and limits private information such as ID numbers, finance details and car costs to the roles that need them. How your dealership collects and uses personal information still decides whether you comply."}}]}]}</script>
 </head>
@@ -602,15 +620,62 @@ footer a:hover { color: #fff; }
 <script>
 (function () {
   var root = document.documentElement;
-  root.classList.add("js");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var top = document.getElementById("top");
   var onScroll = function () { top.classList.toggle("scrolled", window.scrollY > 8); };
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
+  if (reduce) return;
+  root.classList.add("js");
+
+  var revealSelectors = [
+    ".hero .wrap > div", ".hero .jacket", ".band .intro", ".dept-head > *",
+    ".journey li", ".depts .dept", ".split > *", ".local > *", ".match",
+    ".export-steps > *", ".intelligence-grid > *", ".report-list > *",
+    ".faq-wrap > h2", ".faq details", ".close .wrap > *"
+  ];
+  var reveals = new Set();
+  revealSelectors.forEach(function (selector) {
+    document.querySelectorAll(selector).forEach(function (element) { reveals.add(element); });
+  });
+
+  if ("IntersectionObserver" in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+
+    reveals.forEach(function (element) {
+      var siblings = element.parentElement ? Array.from(element.parentElement.children) : [];
+      var index = Math.max(0, siblings.indexOf(element));
+      element.style.setProperty("--reveal-delay", Math.min(index, 5) * 75 + "ms");
+      element.classList.add("reveal");
+      observer.observe(element);
+    });
+  } else {
+    reveals.forEach(function (element) { element.classList.add("is-visible"); });
+  }
+
+  var hero = document.querySelector(".hero");
+  var parallaxFrame = false;
+  var updateHero = function () {
+    if (!hero || parallaxFrame) return;
+    parallaxFrame = true;
+    requestAnimationFrame(function () {
+      var rect = hero.getBoundingClientRect();
+      var drift = Math.max(-24, Math.min(24, -rect.top * 0.045));
+      hero.style.setProperty("--hero-drift", drift.toFixed(1) + "px");
+      parallaxFrame = false;
+    });
+  };
+  window.addEventListener("scroll", updateHero, { passive: true });
+  updateHero();
+
   var jacket = document.getElementById("jacket");
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce) { root.classList.remove("js"); return; }
   // play the car's life once, then count the profit up as its line lands
   requestAnimationFrame(function () { jacket.classList.add("play"); });
   var out = jacket.querySelector("[data-to]");
